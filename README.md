@@ -1,12 +1,12 @@
 # ANI-Camera-Remote
-Remote Control and Timelapse Control of Cameras via ESP8266
+*Remote Control and Timelapse Control of Cameras via ESP8266
 
-#What you need:
+####What you need:
 - ESP8266-Device (nodeMCU recommended)
 - USB-Kabel to upload the program
 - Arduino IDE
 
-#What do do:
+####What do do:
 - Install the Arduino IDE and the Board Manager for ESP8266 into the IDE
 - Load the file ANI_CameraRemote.ino into the IDE
 - Compile the file ANI_CameraRemote.ino in the Arduino IDE and upload it to your ESP8266-Device
