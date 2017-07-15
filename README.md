@@ -19,7 +19,7 @@ What to do
 * Connect your remote release cable to the jack and the other end to your camera  
 * __Make sure the output of the GPIO is compatible with your camera!__ Use optocoupler or relay between ESP8266 and jack if unsure
 * Connect the ESP8266 device via USB cable to your computer
-* Install the Arduino IDE and the Board Manager for ESP8266 into the IDE
+* Install the Arduino IDE and the [ESP8266 Board manager](http://blog.opendatalab.de/codeforbuga/2016/07/02/arduino-ide-mit-nodemcu-esp8266) into the IDE
 * Load the file ANI_CameraRemote.ino into the IDE
 * Compile the file ANI_CameraRemote.ino in the Arduino IDE and upload it to your ESP8266-Device
 * Connect your computer or smartphone to the WiFi network ANI-CameraRemote with the password Remoter12345678
