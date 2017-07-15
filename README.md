@@ -1,5 +1,5 @@
 # ANI-Camera-Remote
-Remote Control and Timelapse Control of Cameras via [ESP8266](https://de.wikipedia.org/wiki/ESP8266)
+Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
 ![First Remoter](First_Remoter.jpg)
 The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
 
@@ -8,7 +8,7 @@ What you need
 * ESP8266 device ([NodeMCU](https://en.wikipedia.org/wiki/NodeMCU) recommended) and power (e.g. USB power bank)
 * USB cabel to upload the program
 * [Arduino IDE](https://www.arduino.cc/en/Main/Software)
-* [ESP8266 board manager](http://blog.opendatalab.de/codeforbuga/2016/07/02/arduino-ide-mit-nodemcu-esp8266)
+* [ESP8266 board manager](http://www.instructables.com/id/Quick-Start-to-Nodemcu-ESP8266-on-Arduino-IDE/)
 * Camera that can be controlled by a remote release via push button
 * Remote release cable for your camera
 
