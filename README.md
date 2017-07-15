@@ -37,7 +37,10 @@ The settings can be changed at the start of the file ANI_CameraRemote.ino
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
 
-
 License
 -
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+Prototype
+-
+![Prototype](http://smss.de/BK/index.php?cmd=image&sfpg=VmVyc2NoaWVkZW5lcy8qUmVtb3Rlcl9Qcm90b3R5cC5qcGcqOGZkOWY1NjFmYjRiOGY5ODdhMWI4OTdlNGZiNzkzNzYwN2I1MTMwNzFkNDUxYjBjZTBmZjhmOThiMzg4MmViYg)
