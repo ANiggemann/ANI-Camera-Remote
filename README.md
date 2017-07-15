@@ -12,8 +12,8 @@ What you need
 What do do
 -
 * Make a connection to GPIO2 of the ESP8266 device and to your cable release 
-** Best practice is to by a cable with a connector on the push button end (i.e. 3.5mm jack plug)
-** Connect a matching jack to GPIO2
+  * Best practice is to by a cable with a connector on the push button end (i.e. 3.5mm jack plug)
+  * Connect a matching jack to GPIO2
 * Connect the ESP8266 device via USB cable to your computer
 * Install the Arduino IDE and the Board Manager for ESP8266 into the IDE
 * Load the file ANI_CameraRemote.ino into the IDE
@@ -31,3 +31,8 @@ Settings
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
+
+
+License
+-
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
