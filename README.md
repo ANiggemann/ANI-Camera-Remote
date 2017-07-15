@@ -5,7 +5,7 @@ The upper cable connects the device to a USB power bank, the lower cable is a re
 
 What you need
 -
-* ESP8266 device ([NodeMCU](https://en.wikipedia.org/wiki/NodeMCU) recommended) and power (i.e. USB power bank)
+* ESP8266 device ([NodeMCU](https://en.wikipedia.org/wiki/NodeMCU) recommended) and power (e.g. USB power bank)
 * USB cabel to upload the program
 * [Arduino IDE](https://www.arduino.cc/en/Main/Software)
 * [ESP8266 board manager](http://blog.opendatalab.de/codeforbuga/2016/07/02/arduino-ide-mit-nodemcu-esp8266)
@@ -15,7 +15,7 @@ What you need
 What to do
 -
 * Make a connection to GPIO2 of the ESP8266 device and to your remote release 
-  * Best practice is to buy a cable with a camera connector on one end and a separate connector on the push button end (i.e. 3.5mm jack plug)
+  * Best practice is to buy a cable with a camera connector on one end and a separate connector on the push button end (e.g. 3.5mm jack plug)
   * Connect a matching jack to GPIO2
 * Connect your remote release cable to the jack and the other end to your camera  
 * **__Make sure the output of the GPIO is compatible with your camera!__** Use optocoupler or relay between ESP8266 and jack if unsure
