@@ -15,9 +15,10 @@ What you need
 What to do
 -
 * Make a connection to GPIO2 of the ESP8266 device and to your cable release 
-  * Best practice is to buy a cable with a camera connector on one end and a seperate connector on the push button end (i.e. 3.5mm jack plug)
+  * Best practice is to buy a cable with a camera connector on one end and a separate connector on the push button end (i.e. 3.5mm jack plug)
   * Connect a matching jack to GPIO2
 * Connect your cable release cable to the jack and the other end to your camera  
+* __Make sure the output of the GPIO is compatible with your camera!__
 * Connect the ESP8266 device via USB cable to your computer
 * Install the Arduino IDE and the Board Manager for ESP8266 into the IDE
 * Load the file ANI_CameraRemote.ino into the IDE
