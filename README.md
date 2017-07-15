@@ -44,3 +44,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Prototype
 -
 ![Prototype](http://smss.de/BK/index.php?cmd=image&sfpg=VmVyc2NoaWVkZW5lcy8qUmVtb3Rlcl9Qcm90b3R5cC5qcGcqOGZkOWY1NjFmYjRiOGY5ODdhMWI4OTdlNGZiNzkzNzYwN2I1MTMwNzFkNDUxYjBjZTBmZjhmOThiMzg4MmViYg)
+Using ESP8266 DIL18 and CP2102
