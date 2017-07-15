@@ -1,7 +1,6 @@
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via ESP8266
-
-![First Remoter](http://smss.de/BK/index.php?cmd=image&sfpg=VmVyc2NoaWVkZW5lcy8qUmVtb3Rlcl9mZXJ0aWcuanBnKmI1NTRiMjFlZDllNTA1MWRlNDFiODRmY2E3OGRkZWI3MThkMjU0NWY4NWJjOGFmYmQ0ZTdkY2QyZTIzMGNlZTk)
+![First Remoter](First_Remoter.jpg)
 The upper cable connects the device to a USB power bank, the lower cable is a cable release cable for Samsung NX cameras
 
 What you need
@@ -44,5 +43,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Prototype
 -
-![Prototype](http://smss.de/BK/index.php?cmd=image&sfpg=VmVyc2NoaWVkZW5lcy8qUmVtb3Rlcl9Qcm90b3R5cC5qcGcqOGZkOWY1NjFmYjRiOGY5ODdhMWI4OTdlNGZiNzkzNzYwN2I1MTMwNzFkNDUxYjBjZTBmZjhmOThiMzg4MmViYg)
+![Prototype](Remoter_Prototype.jpg)
 Using ESP8266 DIL18 and CP2102
