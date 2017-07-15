@@ -12,10 +12,10 @@ What you need
 * Camera that can be controlled by a external cable release via push button
 * Cable release for your camera
 
-What do do
+What to do
 -
 * Make a connection to GPIO2 of the ESP8266 device and to your cable release 
-  * Best practice is to by a cable with a camera connector on one end and a seperate connector on the push button end (i.e. 3.5mm jack plug)
+  * Best practice is to buy a cable with a camera connector on one end and a seperate connector on the push button end (i.e. 3.5mm jack plug)
   * Connect a matching jack to GPIO2
 * Connect your cable release cable to the jack and the other end to your camera  
 * Connect the ESP8266 device via USB cable to your computer
@@ -28,7 +28,7 @@ What do do
 
 Settings
 -
-The settings can be changed at the start of the file ANI_CameraRemote.ino
+The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * ssid = "ANI-CameraRemote" - WiFi SSID
 * password = "Remoter12345678" - Set to "" for open access point w/o passwortd
 * webServerPort = 80 - Port for web server
