@@ -38,7 +38,7 @@ What to do
 
 WebGUI
 -
-[webGUI](webGUI_ANI_Camera_Remote.png)
+![webGUI](webGUI_ANI_Camera_Remote.png)
 
 Usage
 -
