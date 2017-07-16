@@ -36,6 +36,10 @@ What to do
   * Just press "One Shot" in the webGUI and the LED next to the antenna will light up
   * Press "Start" and for 10 times every 5 seconds the LED will light up (timelapse mode)
 
+WebGUI
+-
+[webGUI](webGUI_ANI_Camera_Remote.png)
+
 Usage
 -
 * For single shots, press "One Shot"
