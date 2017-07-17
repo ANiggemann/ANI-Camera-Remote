@@ -4,13 +4,14 @@
   20170607 Base functions
 	20170613 Shot counter for WebGUI
   20170712 Defining triggerPin, settings
+  20170717 Refactoring
   --------------------------------------------------*/
 
 #include <ESP8266WiFi.h>
 
 //--------------------------------------------------
 // Settings:
-// 
+//
 const char* ssid = "ANI-CameraRemote";             // WiFi SSID
 const char* password = "Remoter12345678";          // set to "" for open access point w/o passwortd
 const int webServerPort = 80;                      // Port for web server
@@ -49,7 +50,7 @@ unsigned long currentDelayBetweenShots = 0;
 unsigned long secCounter = 0; // count the seconds since start of timelapse
 unsigned long timeSlotCounter = 0; // count the timeslot since start of timelapse
 
-enum triggerModes { ON, OFF };
+enum triggerModes { ON = 0, OFF = 1 };
 triggerModes currentTriggerMode = OFF;
 enum execModes { ONESHOT, TIMELAPSE, STOP, RESET, SHOTINFO, NONE };
 execModes currentExecMode = NONE;
@@ -84,7 +85,6 @@ void loop()
   }
 
   bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
-
   if (pathOK) // generate the html page
   {
     extractParams(sParam);
@@ -175,28 +175,27 @@ void process()
 
 String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval)
 {
-  String retVal;
-  retVal  = "<html><head><title>ANI Camera Remote</title>";
-  retVal += "<style>table, th, td { border: 0px solid black;} button, input[type=number], input[type=submit] ";
-  retVal += "{width:100px;height:24px;font-size:14pt;}</style></head><body>";
-  retVal += "<font color=\"#000000\"><body bgcolor=\"#c0c0c0\">";
-  retVal += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=yes\">";
-  retVal += "<h2>" + prgTitle + " V" + prgVersion + "</h2>";
-  retVal += "<table style=\"font-size:24px;\">";
-  retVal += "<tr><td>Timelapse</td><td><a href=?function=RESET><button>Reset</button></a></td></tr>";
-  retVal += "<form method=GET>";
-  retVal += "<tr><td>Delay to start:</td><td><input id=delayToStart name=delayToStart type=number min=0 step=1 value=" + String(sDelay) + "> sec</td></tr>";
-  retVal += "<tr><td>Number of shots:</td><td><input id=numberOfShots name=numberOfShots type=number min=1 step=1 value=" + String(nShots) + "></td></tr>";
-  retVal += "<tr><td>Interval:</td><td><input id=delayBetweenShots name=delayBetweenShots type=number min=1 step=1 value=" + String(interval) + "> sec</td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
-  retVal += "<tr><td><input type=submit value=Start></td>";
-  retVal += "</form>";
-  retVal += "<td><a href=?function=STOP><button>Stop</button></a></td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
-  retVal += "<tr><td></td><td></td></tr>";
+  String retVal = "<html><head><title>ANI Camera Remote</title>"
+                  "<style>table, th, td { border: 0px solid black;} button, input[type=number], input[type=submit] "
+                  "{width:100px;height:24px;font-size:14pt;}</style></head><body>"
+                  "<font color=\"#000000\"><body bgcolor=\"#c0c0c0\">"
+                  "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=yes\">"
+                  "<h2>" + prgTitle + " V" + prgVersion + "</h2>"
+                  "<table style=\"font-size:24px;\">"
+                  "<tr><td>Timelapse</td><td><a href=?function=RESET><button>Reset</button></a></td></tr>"
+                  "<form method=GET>"
+                  "<tr><td>Delay to start:</td><td><input id=delayToStart name=delayToStart type=number min=0 step=1 value=" + String(sDelay) + "> sec</td></tr>"
+                  "<tr><td>Number of shots:</td><td><input id=numberOfShots name=numberOfShots type=number min=1 step=1 value=" + String(nShots) + "></td></tr>"
+                  "<tr><td>Interval:</td><td><input id=delayBetweenShots name=delayBetweenShots type=number min=1 step=1 value=" + String(interval) + "> sec</td></tr>"
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td><input type=submit value=Start></td>"
+                  "</form>"
+                  "<td><a href=?function=STOP><button>Stop</button></a></td></tr>"
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td></td><td></td></tr>";
   String buttonState = "disabled";
   if ((currentExecMode == TIMELAPSE) || (currentExecMode == SHOTINFO))
     buttonState = "";
@@ -207,9 +206,8 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
     retVal += "<tr><td>Remaining shots:</td><td>" + String(currentNShots) + "</td></tr>";
     currentExecMode = TIMELAPSE;
   }
-  retVal += "</table>";
-  retVal += "</BR>";
-  retVal += "<FONT SIZE=-2>Camera trigger switches GPIO" + String(triggerPin) + ".<BR>";
+  retVal += "</table></BR>";
+  retVal += "<FONT SIZE=-1>GPIO" + String(triggerPin) + " triggers camera shutter.<BR>";
   return retVal;
 }
 
@@ -217,28 +215,22 @@ void generateErrorHTML(String& sResp, String& sHead)
 {
   sResp = "<html><head><title>404 Not Found</title></head><body><h1>Not Found</h1><p>The requested URL was not found on this server.</p></body></html>";
 
-  sHead  = "HTTP/1.1 404 Not found\r\n";
-  sHead += "Content-Length: ";
-  sHead += sResp.length();
-  sHead += "\r\n";
-  sHead += "Content-Type: text/html\r\n";
-  sHead += "Connection: close\r\n";
-  sHead += "\r\n";
+  sHead = "HTTP/1.1 404 Not found\r\n"
+          "Content-Length: " + String(sResp.length()) + "\r\n"
+          "Content-Type: text/html\r\n"
+          "Connection: close\r\n"
+          "\r\n";
 }
 
 void generateOKHTML(String& sResp, String& sHead)
 {
-  sResp += "<FONT SIZE=-3>";
-  sResp += "Andreas Niggemann " + String(versionMonth) + "/" + String(versionYear) + "<BR>";
-  sResp += "</body></html>";
+  sResp += "<FONT SIZE=-3>Andreas Niggemann " + String(versionMonth) + "/" + String(versionYear) + "<BR></body></html>";
 
-  sHead  = "HTTP/1.1 200 OK\r\n";
-  sHead += "Content-Length: ";
-  sHead += sResp.length();
-  sHead += "\r\n";
-  sHead += "Content-Type: text/html\r\n";
-  sHead += "Connection: close\r\n";
-  sHead += "\r\n";
+  sHead = "HTTP/1.1 200 OK\r\n"
+          "Content-Length: " + String(sResp.length()) + "\r\n"
+          "Content-Type: text/html\r\n"
+          "Connection: close\r\n"
+          "\r\n";
 }
 
 String getRequest(WiFiClient webclient)
@@ -257,10 +249,9 @@ String getRequest(WiFiClient webclient)
 
 bool checkPathAndGetParameters(String sReq, String& sPar)
 {
-  String sGetstart = "GET ";
+  String sGetstart = "GET ", sPat = "";
   int iStart, iEndSpace, iEndQuest;
   iStart = sReq.indexOf(sGetstart);
-  String sPat = "";
   sPar = "";
   if (iStart >= 0)
   {
@@ -327,10 +318,7 @@ void extractParams(String params)
 
 void trigger(triggerModes tMode)
 {
-  if (tMode == ON)
-    digitalWrite(triggerPin, 0);
-  else
-    digitalWrite(triggerPin, 1);
+  digitalWrite(triggerPin, tMode);
   currentTriggerMode =  tMode;
 }
 
