@@ -68,7 +68,7 @@ Why you should choose a NodeMCU over any other ESP8266 device
 	* MicroUSB connector for programming and power supply
 	* No need to connect GPIO0 to GND for programming mode
 	* Integrated LED on GPIO2
-  * No need for an extra CP2102 interface, a CH340G is build in	
+  	* No need for an extra CP2102 interface, a CH340G is build in	
 	* Programming in LUA or c++
 * Support by a large community providing examples and instructions for free
 * Easy to mount on a breadboard (better than ESP-01 etc.)
