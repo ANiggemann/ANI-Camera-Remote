@@ -30,7 +30,7 @@ What to do
   * Connect your remote release cable to the jack and the other end to your camera  
 * **__Make sure the output of the GPIO is compatible with your camera!__** Use optocoupler or relay between ESP8266 and jack if unsure
 * Connect your computer or smartphone to the WiFi network ANI-CameraRemote with the password Remoter12345678
-* Open a web browser and browse to the IP address of your ESP8266 device
+* Open a web browser and browse to the IP address of your ESP8266 device (usually 192.168.4.1)
 * Control the remote via the webGUI
 * On a NodeMCU the program can be tested without any connection to a camera or an extra LED since NodeMCU contains a LED for GPIO2 onboard
   * Just press "One Shot" in the webGUI and the LED next to the antenna will light up
@@ -59,6 +59,20 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
+
+Why you should choose a NodeMCU over any other ESP8266 device
+-
+* NodeMCU contains everything to start the easy way in ESP8266 programming
+	* Standard pin spacing (no SMD soldering)
+	* Integrated antenna
+	* MicroUSB connector for programming and power supply
+	* No need to connect GPIO0 to GND for programming mode
+	* Integrated LED on GPIO2
+  * No need for an extra CP2102 interface, a CH340G is build in	
+	* Programming in LUA or c++
+* Support by a large community providing examples and instructions for free
+* Easy to mount on a breadboard (better than ESP-01 etc.)
+* Low cost (less than 10 Euro)
 
 License
 -
