@@ -1,6 +1,7 @@
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
 ![First Remoter](First_Remoter.jpg)
+
 The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
 
 What you need
@@ -84,4 +85,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Prototype
 -
 ![Prototype](Remoter_Prototype.jpg)
+
 Using ESP8266 DIL18 and CP2102 (usually more expensive than a NodeMCU that contains a CP2102)
