@@ -5,6 +5,8 @@
 	20170613 Shot counter for WebGUI
   20170712 Defining triggerPin, settings
   20170717 Refactoring
+  20170720 Bugfix: Restart timelapse after reconnect removed
+  20170720 Information is displayed all the time, refresh button
   --------------------------------------------------*/
 
 #include <ESP8266WiFi.h>
@@ -31,7 +33,7 @@ const unsigned long default_delayBetweenShots = 5; // Delay between shots in tim
 
 // Global variables
 const String prgTitle = "ANI Camera Remote";
-const String prgVersion = "1.1";
+const String prgVersion = "1.2";
 const int versionMonth = 7;
 const int versionYear = 2017;
 
@@ -52,7 +54,7 @@ unsigned long timeSlotCounter = 0; // count the timeslot since start of timelaps
 
 enum triggerModes { ON = 0, OFF = 1 };
 triggerModes currentTriggerMode = OFF;
-enum execModes { ONESHOT, TIMELAPSE, STOP, RESET, SHOTINFO, NONE };
+enum execModes { ONESHOT, TIMELAPSE, STOP, RESET, REFRESH, NONE };
 execModes currentExecMode = NONE;
 
 // Create webserver on webServerPort
@@ -88,7 +90,9 @@ void loop()
   if (pathOK) // generate the html page
   {
     extractParams(sParam);
-    pre_process();
+    if (sParam != "")
+      pre_process();
+
     sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
     generateOKHTML(sResponse, sHeader);
   }
@@ -175,6 +179,13 @@ void process()
 
 String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval)
 {
+  String stateNotInTimelapse = "enabled";
+  String buttonState = "disabled";
+  if (((currentExecMode == TIMELAPSE) || (currentExecMode == REFRESH)) && (currentNShots > 0))
+  {
+    buttonState = "enabled";
+    stateNotInTimelapse = "disabled";
+  }
   String retVal = "<html><head><title>ANI Camera Remote</title>"
                   "<style>table, th, td { border: 0px solid black;} button, input[type=number], input[type=submit] "
                   "{width:100px;height:24px;font-size:14pt;}</style></head><body>"
@@ -182,32 +193,25 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=yes\">"
                   "<h2>" + prgTitle + " V" + prgVersion + "</h2>"
                   "<table style=\"font-size:24px;\">"
-                  "<tr><td>Timelapse</td><td><a href=?function=RESET><button>Reset</button></a></td></tr>"
+                  "<tr><td>Timelapse</td><td><a href=?function=RESET><button " + stateNotInTimelapse + ">Reset</button></a></td></tr>"
                   "<form method=GET>"
-                  "<tr><td>Delay to start:</td><td><input id=delayToStart name=delayToStart type=number min=0 step=1 value=" + String(sDelay) + "> sec</td></tr>"
-                  "<tr><td>Number of shots:</td><td><input id=numberOfShots name=numberOfShots type=number min=1 step=1 value=" + String(nShots) + "></td></tr>"
-                  "<tr><td>Interval:</td><td><input id=delayBetweenShots name=delayBetweenShots type=number min=1 step=1 value=" + String(interval) + "> sec</td></tr>"
+                  "<tr><td>Delay to start:</td><td><input " + stateNotInTimelapse + " id=delayToStart name=delayToStart type=number min=0 step=1 value=" + String(sDelay) + "> sec</td></tr>"
+                  "<tr><td>Number of shots:</td><td><input " + stateNotInTimelapse + " id=numberOfShots name=numberOfShots type=number min=1 step=1 value=" + String(nShots) + "></td></tr>"
+                  "<tr><td>Interval:</td><td><input " + stateNotInTimelapse + " id=delayBetweenShots name=delayBetweenShots type=number min=1 step=1 value=" + String(interval) + "> sec</td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
-                  "<tr><td><input type=submit value=Start></td>"
+                  "<tr><td><input type=submit value=Start " + stateNotInTimelapse + "></td>"
                   "</form>"
                   "<td><a href=?function=STOP><button>Stop</button></a></td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
-                  "<tr><td></td><td></td></tr>";
-  String buttonState = "disabled";
-  if ((currentExecMode == TIMELAPSE) || (currentExecMode == SHOTINFO))
-    buttonState = "";
-  retVal += "<tr><td><a href=?function=SINGLE_SHOT><button>One Shot</button></a></td><td><a href=?function=SHOT_INFO><button " + buttonState + ">Info</button></a></td></tr>";
-  if (currentExecMode == SHOTINFO) // Display remaining number of shots and delay time till start in TIMELAPSE mode
-  {
-    retVal += "<tr><td>Remaining delay:</td><td>" + String(currentDelayToStart) + " sec</td></tr>";
-    retVal += "<tr><td>Remaining shots:</td><td>" + String(currentNShots) + "</td></tr>";
-    currentExecMode = TIMELAPSE;
-  }
-  retVal += "</table></BR>";
-  retVal += "<FONT SIZE=-1>GPIO" + String(triggerPin) + " triggers camera shutter.<BR>";
+                  "<tr><td></td><td></td></tr>"
+                  "<tr><td><a href=?function=SINGLE_SHOT><button " + stateNotInTimelapse + ">One Shot</button></a></td><td><a href=?function=REFRESH><button " + buttonState + ">Refresh</button></a></td></tr>"
+                  "<tr><td><FONT SIZE=-1>Remaining delay:</td><td><FONT SIZE=-1>" + String(currentDelayToStart) + " sec</td></tr>"
+                  "<tr><td><FONT SIZE=-1>Remaining shots:</td><td><FONT SIZE=-1>" + String(currentNShots) + "</td></tr>"
+                  "</table></BR>"
+                  "<FONT SIZE=-1>GPIO" + String(triggerPin) + " triggers camera shutter.<BR>";
   return retVal;
 }
 
@@ -287,8 +291,8 @@ void extractParams(String params)
       currentExecMode = RESET;
     else if (params.indexOf("SINGLE_SHOT") >= 0) // single shot
       currentExecMode = ONESHOT;
-    else if (params.indexOf("SHOT_INFO") >= 0) // single shot
-      currentExecMode = SHOTINFO;
+    else if (params.indexOf("REFRESH") >= 0) // single shot
+      currentExecMode = REFRESH;
     else // Timelapse
     {
       currentExecMode = TIMELAPSE;
