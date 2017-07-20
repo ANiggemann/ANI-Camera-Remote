@@ -5,8 +5,9 @@
 	20170613 Shot counter for WebGUI
   20170712 Defining triggerPin, settings
   20170717 Refactoring
-  20170720 Bugfix: Restart timelapse after reconnect removed
+  20170720 Bugfix: Restarting timelapse after reconnect removed
   20170720 Information is displayed all the time, refresh button
+  20170720 Autorefresh setting added
   --------------------------------------------------*/
 
 #include <ESP8266WiFi.h>
@@ -24,6 +25,7 @@ const int triggerPin = 2;                          // GPIO2 as trigger output
 const unsigned long default_delayToStart = 0;      // Delay in seconds till start of timelapse
 const unsigned long default_numberOfShots = 10;    // Number of shots in timelapse mode
 const unsigned long default_delayBetweenShots = 5; // Delay between shots in timelapse mode
+const unsigned long default_autorefresh = 60;      // In timelapse mode autorefresh webGUI every 60 seconds, 0 = autorefresh off
 
 // End of settings
 //--------------------------------------------------
@@ -43,19 +45,24 @@ const int timeSlotsPerSecond = 4;
 unsigned long delayToStart = default_delayToStart;
 unsigned long numberOfShots = default_numberOfShots;
 unsigned long delayBetweenShots = default_delayBetweenShots;
+unsigned long autorefresh = default_autorefresh;
 unsigned long previousTimeSlotMillis = 0;
 unsigned long currentDelayToStart = 0;
 unsigned long currentNShots = 0;
 unsigned long NumberOfShotsSinceStart = 0; //
 unsigned long currentDelayBetweenShots = 0;
+unsigned long currentAutorefresh = 0;
 
 unsigned long secCounter = 0; // count the seconds since start of timelapse
 unsigned long timeSlotCounter = 0; // count the timeslot since start of timelapse
 
+String myIPStr = "";
+
 enum triggerModes { ON = 0, OFF = 1 };
 triggerModes currentTriggerMode = OFF;
-enum execModes { ONESHOT, TIMELAPSE, STOP, RESET, REFRESH, NONE };
+enum execModes { NONE, ONESHOT, TIMELAPSESTART, TIMELAPSERUNNING, TIMELAPSESTOP, REFRESH, RESET };
 execModes currentExecMode = NONE;
+
 
 // Create webserver on webServerPort
 WiFiServer server(webServerPort);
@@ -69,6 +76,8 @@ void setup()
   WiFi.mode(WIFI_AP); // AP mode for connections
   WiFi.softAP(ssid, password);
   server.begin();
+  IPAddress ip = WiFi.softAPIP();
+  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
 }
 
 void loop()
@@ -89,9 +98,11 @@ void loop()
   bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
   if (pathOK) // generate the html page
   {
-    extractParams(sParam);
     if (sParam != "")
-      pre_process();
+    {
+      extractParams(sParam);
+      process_mode();
+    }
 
     sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
     generateOKHTML(sResponse, sHeader);
@@ -104,31 +115,37 @@ void loop()
   client.stop(); // and stop the client
 }
 
-void pre_process()
+void process_mode()
 {
   if (currentExecMode == ONESHOT)
   {
+    currentAutorefresh = 0;
     trigger(ON);
-    currentExecMode == NONE;
     currentDelayToStart = 0;
     currentNShots = 0;
     currentDelayBetweenShots = 0;
-  }
-  else if (currentExecMode == STOP)
-  {
     currentExecMode == NONE;
+  }
+  else if (currentExecMode == TIMELAPSESTOP)
+  {
+    currentAutorefresh = 0;
+    currentNShots = 0;
     trigger(OFF);
+    currentExecMode == NONE;
   }
   else if (currentExecMode == RESET)
   {
+    currentAutorefresh = 0;
     delayToStart = default_delayToStart;
     numberOfShots = default_numberOfShots;
     delayBetweenShots = default_delayBetweenShots;
-    currentExecMode = NONE;
+    currentNShots = 0;
     trigger(OFF);
+    currentExecMode = NONE;
   }
-  else if (currentExecMode == TIMELAPSE)
+  else if (currentExecMode == TIMELAPSESTART)
   {
+    currentAutorefresh = autorefresh;
     secCounter = 0;
     timeSlotCounter = 0;
     currentDelayToStart = delayToStart;
@@ -141,12 +158,62 @@ void pre_process()
     }
     else
       currentNShots = numberOfShots;
+    currentExecMode = TIMELAPSERUNNING;
+  }
+}
+
+void extractParams(String params)
+{
+  params[0] = ' ';
+  params.trim();
+  params.toUpperCase();
+  if (params.length() > 0)
+  {
+    params += "&";
+    if ((currentExecMode == TIMELAPSERUNNING) || (currentExecMode == REFRESH)) // Only refresh and stop allowed in timelapse mode
+    {
+      if (params.indexOf("REFRESH") >= 0) // Refresh webGUI
+        currentExecMode = REFRESH;
+      if (params.indexOf("STOP") >= 0) // STOP timelapse
+        currentExecMode = TIMELAPSESTOP;
+    }
+    else // blocked if timelapse running
+    {
+      if (params.indexOf("RESET") >= 0) // RESET form
+        currentExecMode = RESET;
+      else if (params.indexOf("SINGLE_SHOT") >= 0) // single shot
+        currentExecMode = ONESHOT;
+      else if ((params.indexOf("DELAYTOSTART") >= 0) && (currentNShots <= 0)) // Switch to timelapse
+      {
+        currentExecMode = TIMELAPSESTART;
+        String par = params + " ";
+        int idx = par.indexOf("&"); // Find element delimiter
+        while (idx > 2)
+        {
+          String elem = par.substring(0, idx);
+          par = par.substring(idx + 1, par.length());
+          int idx2 = elem.indexOf("=");
+          if (idx2 > 1)
+          {
+            String elemName = elem.substring(0, idx2); // Variable name
+            String elemValue = elem.substring(idx2 + 1, elem.length()); // Variable value
+            if (elemName == "DELAYTOSTART")
+              delayToStart = elemValue.toInt();
+            if (elemName == "NUMBEROFSHOTS")
+              numberOfShots = elemValue.toInt();
+            if (elemName == "DELAYBETWEENSHOTS")
+              delayBetweenShots = elemValue.toInt();
+          }
+          idx = par.indexOf("&");
+        }
+      }
+    }
   }
 }
 
 void process()
 {
-  if ((currentExecMode == NONE) || (currentExecMode == STOP) )
+  if ((currentExecMode == NONE) || (currentExecMode == TIMELAPSESTOP) )
     return;
   unsigned long currentTimeSlotMillis = millis();
   if ((currentTimeSlotMillis - previousTimeSlotMillis) > timeSlot) // 250 ms time slot
@@ -179,14 +246,19 @@ void process()
 
 String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval)
 {
+  String refreshLine = "";
   String stateNotInTimelapse = "enabled";
   String buttonState = "disabled";
-  if (((currentExecMode == TIMELAPSE) || (currentExecMode == REFRESH)) && (currentNShots > 0))
+  if (((currentExecMode == TIMELAPSERUNNING) || (currentExecMode == REFRESH)) && (currentNShots > 0))
   {
     buttonState = "enabled";
     stateNotInTimelapse = "disabled";
   }
-  String retVal = "<html><head><title>ANI Camera Remote</title>"
+  else
+    currentAutorefresh = 0;
+  if (currentAutorefresh > 0)
+    refreshLine = "<meta http-equiv=\"refresh\" content=\"" + String(currentAutorefresh) + "; URL=http://" + myIPStr + "/\">";
+  String retVal = "<html><head><title>ANI Camera Remote</title>" + refreshLine + ""
                   "<style>table, th, td { border: 0px solid black;} button, input[type=number], input[type=submit] "
                   "{width:100px;height:24px;font-size:14pt;}</style></head><body>"
                   "<font color=\"#000000\"><body bgcolor=\"#c0c0c0\">"
@@ -202,7 +274,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   "<tr><td></td><td></td></tr>"
                   "<tr><td><input type=submit value=Start " + stateNotInTimelapse + "></td>"
                   "</form>"
-                  "<td><a href=?function=STOP><button>Stop</button></a></td></tr>"
+                  "<td><a href=?function=STOP><button " + buttonState + ">Stop</button></a></td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
@@ -211,7 +283,10 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   "<tr><td><FONT SIZE=-1>Remaining delay:</td><td><FONT SIZE=-1>" + String(currentDelayToStart) + " sec</td></tr>"
                   "<tr><td><FONT SIZE=-1>Remaining shots:</td><td><FONT SIZE=-1>" + String(currentNShots) + "</td></tr>"
                   "</table></BR>"
-                  "<FONT SIZE=-1>GPIO" + String(triggerPin) + " triggers camera shutter.<BR>";
+                  "<FONT SIZE=-1>GPIO" + String(triggerPin) + " triggers camera shutter<BR>";
+                  
+  if (refreshLine != "")
+    retVal += "<FONT SIZE=-2>Page will refresh every " + String(currentAutorefresh) +  " seconds<BR>";
   return retVal;
 }
 
@@ -275,49 +350,6 @@ bool checkPathAndGetParameters(String sReq, String& sPar)
     }
   }
   return sPat == "/";
-}
-
-void extractParams(String params)
-{
-  params[0] = ' ';
-  params.trim();
-  params.toUpperCase();
-  if (params.length() > 0)
-  {
-    params += "&";
-    if (params.indexOf("STOP") >= 0) // STOP timelapse
-      currentExecMode = STOP;
-    else if (params.indexOf("RESET") >= 0) // RESET form
-      currentExecMode = RESET;
-    else if (params.indexOf("SINGLE_SHOT") >= 0) // single shot
-      currentExecMode = ONESHOT;
-    else if (params.indexOf("REFRESH") >= 0) // single shot
-      currentExecMode = REFRESH;
-    else // Timelapse
-    {
-      currentExecMode = TIMELAPSE;
-      String par = params + " ";
-      int idx = par.indexOf("&"); // Find element delimiter
-      while (idx > 2)
-      {
-        String elem = par.substring(0, idx);
-        par = par.substring(idx + 1, par.length());
-        int idx2 = elem.indexOf("=");
-        if (idx2 > 1)
-        {
-          String elemName = elem.substring(0, idx2); // Variable name
-          String elemValue = elem.substring(idx2 + 1, elem.length()); // Variable value
-          if (elemName == "DELAYTOSTART")
-            delayToStart = elemValue.toInt();
-          if (elemName == "NUMBEROFSHOTS")
-            numberOfShots = elemValue.toInt();
-          if (elemName == "DELAYBETWEENSHOTS")
-            delayBetweenShots = elemValue.toInt();
-        }
-        idx = par.indexOf("&");
-      }
-    }
-  }
 }
 
 void trigger(triggerModes tMode)

@@ -24,7 +24,7 @@ What to do
 * Compile the file ANI_CameraRemote.ino in the Arduino IDE and upload it to your ESP8266 device simply by pressing CTRL-U in the IDE
   * Sometimes you had to adjust the upload speed (in "Tools" in the IDEs menu)
 * Connect the GPIO2 of the ESP8266 device to your remote release 
-  * GPIO2 is the fifth pin (from the top, antenna facing up, usb facing down) on the right side of the module
+  * GPIO2 is the fifth pin (from the top, antenna facing up, USB facing down) on the right side of the module
   * Best practice is to buy a cable with a camera connector on one end and a separate connector on the push button end (e.g. 3.5mm jack plug)
   * Connect a matching jack to GPIO2
   * Connect your remote release cable to the jack and the other end to your camera  
@@ -38,15 +38,16 @@ What to do
 
 WebGUI
 -
-![webGUI](webGUI_ANI_Camera_Remote.png)
+![webGUI](webGUI_ANI_Camera_Remote.png) ![webGUI Autorefresh](webGUI_ANI_Camera_Remote_autorefresh.png)
 
 Usage
 -
 * For single shots, press "One Shot"
 * To start timelapse, input the delay for the timelapse to start, the number of shots and the time between the shots, then press "Start"
 * At any time it is possible to stop the timelapse operation by pressing "Stop"
-* "Reset" will stop any operation and will reset the delay to start, the number of shots and the time between shots to their default values
-* Timelapse mode only: "Info" will show how many seconds are left to start the timelapse and how many shots are left 
+* Timelapse mode only: "Refresh" will show how many seconds are left to start the timelapse and how many shots are left 
+* During timelapse mode the webGUI will refresh its page every 60 seconds
+* "Reset" will reset the delay to start, the number of shots and the time between shots to their default values
 * There is no need to shutdown the ESP8266, just remove the power
 
 Settings
@@ -59,17 +60,19 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
+* default_autorefresh = 60 - In timelapse mode autorefresh webGUI every 60 seconds, 0 = autorefresh off
+
 
 Why you should choose a NodeMCU over any other ESP8266 device
 -
 * NodeMCU contains everything to start the easy way in ESP8266 programming
-	* Standard pin spacing (no SMD soldering)
-	* Integrated antenna
-	* MicroUSB connector for programming and power supply
-	* No need to connect GPIO0 to GND for programming mode
-	* Integrated LED on GPIO2
-  	* No need for an extra CP2102 interface, a CH340G is build in	
-	* Programming in LUA or c++
+  * Standard pin spacing (no SMD soldering)
+  * Integrated antenna
+  * MicroUSB connector for programming and power supply
+  * No need to connect GPIO0 to GND for programming mode
+  * Integrated LED on GPIO2
+  * No need for an extra CP2102 interface, a CH340G is build in	
+  * Programming in LUA or c++
 * Support by a large community providing examples and instructions for free
 * Easy to mount on a breadboard (better than ESP-01 etc.)
 * Low cost (less than 10 Euro)
