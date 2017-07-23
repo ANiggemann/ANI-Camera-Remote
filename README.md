@@ -14,6 +14,7 @@ What you need
 * [ESP8266 board manager](http://www.instructables.com/id/Quick-Start-to-Nodemcu-ESP8266-on-Arduino-IDE/)
 * Camera that can be controlled by a remote release via push button
 * Remote release cable for your camera
+* Optional: Button or sensor on GPIO5 if you want to start timelapse externally (without WiFi control)
 
 What to do
 -
@@ -35,7 +36,8 @@ What to do
 * Control the remote via the webGUI
 * On a NodeMCU the program can be tested without any connection to a camera or an extra LED since NodeMCU contains a LED for GPIO2 onboard
   * Just press "One Shot" in the webGUI and the LED next to the antenna will light up
-  * Press "Start" and for 10 times every 5 seconds the LED will light up (timelapse mode)
+  * Press "Start" and every 5 seconds the LED will light up (10 times, timelapse mode)
+* Timelapse may started by connecting GPIO5 momentarily to GND (via push button etc.) after pressing the "Wait for GPIO5" in the webGUI
 
 WebGUI
 -
@@ -47,7 +49,7 @@ Usage
 * To start timelapse, input the delay for the timelapse to start, the number of shots and the time between the shots, then press "Start"
 * At any time it is possible to stop the timelapse operation by pressing "Stop"
 * Timelapse mode only: "Refresh" will show how many seconds are left to start the timelapse and how many shots are left 
-* During timelapse mode the webGUI will refresh its page every 60 seconds
+* During timelapse mode the webGUI will refresh its page every 15 seconds
 * "Reset" will reset the delay to start, the number of shots and the time between shots to their default values
 * There is no need to shutdown the ESP8266, just remove the power
 
@@ -58,11 +60,11 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * password = "Remoter12345678" - Set to "" for open access point w/o passwortd
 * webServerPort = 80 - Port for web server
 * triggerPin = 2 - GPIO2 as trigger output
+* startPin = 5 - GPIO5 as start input for timelapse, -1 = deactivate input pin processing
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
-* default_autorefresh = 60 - In timelapse mode autorefresh webGUI every 60 seconds, 0 = autorefresh off
-
+* default_autorefresh = 15 - In timelapse mode autorefresh webGUI every 15 seconds, 0 = autorefresh off
 
 Why you should choose a NodeMCU over any other ESP8266 device
 -
