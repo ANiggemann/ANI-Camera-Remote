@@ -53,6 +53,14 @@ Usage
 * "Reset" will reset the delay to start, the number of shots and the time between shots to their default values
 * There is no need to shutdown the ESP8266, just remove the power
 
+"Headless" Mode
+-
+* For the "headless" mode, configure all settings in the program and then upload it to the device
+* From then on, by triggering the start pin (e.g. GPIO5) the timelapse mode will start with these settings without the need to make a WiFi connection to the device
+* Use a push button or a sensor which connect the start pin to GND for a short time
+* Timelapse will start only after the low to high transition on the start pin
+* This mode comes in handy for wildlife photography etc.
+
 Settings
 -
 The settings can be changed at the beginning of the file ANI_CameraRemote.ino

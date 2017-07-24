@@ -159,6 +159,7 @@ void process_mode()
       currentNShots = numberOfShots;
     currentExecMode = TIMELAPSERUNNING;
   }
+  previousTimeSlotMillis = millis();
 }
 
 void process()
@@ -264,11 +265,13 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
   String buttonState = "disabled";
   String waitForGPIOLine = "";
   String waitForGPIOLineHint = "";
+  bool showWaitForGPIOLineHint = true;
   // disable webGUI elements while in timelapse
   if (((currentExecMode == TIMELAPSERUNNING) || (currentExecMode == REFRESH)) && (currentNShots > 0))
   {
     buttonState = "enabled";
     stateNotInTimelapse = "disabled";
+    showWaitForGPIOLineHint = false;
   }
   else if (currentExecMode == WAITFORGPIO)
     currentAutorefresh = autorefresh;
@@ -279,7 +282,8 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
   if (startPin > -1) // webGUI elements für GPIO if defined
   {
     waitForGPIOLine = "<input type=submit value=\"Wait for GPIO" + String(startPin) + "\" " + stateNotInTimelapse + " name=WAITFORGPIO>";
-    waitForGPIOLineHint = "<FONT SIZE=-2>GPIO" + String(startPin) + " input LOW starts timelapse<BR>";
+    if (showWaitForGPIOLineHint)
+      waitForGPIOLineHint = "<FONT SIZE=-2>GPIO" + String(startPin) + " input LOW starts timelapse<BR>";
   }
   // HTML here
   String retVal = "<html><head><title>ANI Camera Remote</title>" + refreshLine + ""
@@ -386,14 +390,13 @@ void clientOutAndStop(String sHdr, String sRespo)
 void CheckAndProcessInputPin(int inputPin)
 {
   if (inputPin > -1) // Input pin defined
-    if (currentExecMode == WAITFORGPIO)
-      if (digitalRead(inputPin) == LOW) // start signal
-      {
-        while (digitalRead(inputPin) == LOW) // wait till button not pressed
-          delay(250);
-        currentExecMode = TIMELAPSESTART;
-        process_mode();
-      }
+    if (digitalRead(inputPin) == LOW) // start signal
+    {
+      while (digitalRead(inputPin) == LOW) // wait till button not pressed
+        delay(250);
+      currentExecMode = TIMELAPSESTART;
+      process_mode();
+    }
 }
 
 void trigger(triggerModes tMode)
