@@ -9,6 +9,8 @@
   20170720 Information is displayed all the time, refresh button
   20170720 Autorefresh setting added
   20170722 Input pin as timelapse start
+  20170724 Setting for autostart timelapse mode
+  20170724 Calculate remaining time
   --------------------------------------------------*/
 
 #include <ESP8266WiFi.h>
@@ -28,6 +30,7 @@ const unsigned long default_delayToStart = 0;      // Delay in seconds till star
 const unsigned long default_numberOfShots = 10;    // Number of shots in timelapse mode
 const unsigned long default_delayBetweenShots = 5; // Delay between shots in timelapse mode
 const unsigned long default_autorefresh = 15;      // In timelapse mode autorefresh webGUI every 15 seconds, 0 = autorefresh off
+const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mode, 0 = No autostart
 
 // End of settings
 //--------------------------------------------------
@@ -54,6 +57,7 @@ unsigned long currentNShots = 0;
 unsigned long NumberOfShotsSinceStart = 0; //
 unsigned long currentDelayBetweenShots = 0;
 unsigned long currentAutorefresh = 0;
+int currentTimelapseAutoStart = timelapseAutoStart;
 
 unsigned long secCounter = 0; // count the seconds since start of timelapse
 unsigned long timeSlotCounter = 0; // count the timeslot since start of timelapse
@@ -73,15 +77,18 @@ WiFiClient client;
 
 void setup()
 {
-  if (startPin > -1)
-    pinMode(startPin, INPUT_PULLUP); // Setup GPIO input for start signal
   pinMode(triggerPin, OUTPUT); // setup GPIO as camera trigger
   trigger(OFF);
+  if (startPin > -1)
+    pinMode(startPin, INPUT_PULLUP); // Setup GPIO input for start signal
+
   WiFi.mode(WIFI_AP); // AP mode for connections
   WiFi.softAP(ssid, password);
   server.begin();
   IPAddress ip = WiFi.softAPIP();
   myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+
+  checkAndProcessAutoStart();
 }
 
 void loop()
@@ -89,7 +96,8 @@ void loop()
   String sResponse, sHeader, sParam = "";
 
   process();
-  CheckAndProcessInputPin(startPin);
+
+  checkAndProcessStartPin();
 
   client = server.available(); // Check if a client has connected
   String sRequest = getRequest(client);
@@ -142,6 +150,10 @@ void process_mode()
     trigger(OFF);
     currentExecMode = NONE;
   }
+  else if (currentExecMode == WAITFORGPIO)
+  {
+    secCounter = 0;
+  }
   else if (currentExecMode == TIMELAPSESTART)
   {
     currentAutorefresh = autorefresh;
@@ -164,7 +176,7 @@ void process_mode()
 
 void process()
 {
-  if ((currentExecMode == NONE) || (currentExecMode == TIMELAPSESTOP) )
+  if ((currentExecMode == NONE) || (currentExecMode == TIMELAPSESTOP) || (currentExecMode == WAITFORGPIO))
     return;
   unsigned long currentTimeSlotMillis = millis();
   if ((currentTimeSlotMillis - previousTimeSlotMillis) > timeSlot) // 250 ms time slot
@@ -261,6 +273,7 @@ void setTimelapseParams(String params) // Set timelapse parameters for modes WAI
 String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval)
 {
   String refreshLine = "";
+  String remainingTimeLine = "";
   String stateNotInTimelapse = "enabled";
   String buttonState = "disabled";
   String waitForGPIOLine = "";
@@ -278,7 +291,11 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
   else
     currentAutorefresh = 0;
   if (currentAutorefresh > 0)
+  {
     refreshLine = "<meta http-equiv=\"refresh\" content=\"" + String(currentAutorefresh) + "; URL=http://" + myIPStr + "/\">";
+    String remainingTime = getRemainingTimeStr(sDelay, nShots, interval, secCounter);
+    remainingTimeLine = "<tr><td><FONT SIZE=-1>Remaining time:</td><td><FONT SIZE=-1>" + remainingTime + "</td></tr>";
+  }
   if (startPin > -1) // webGUI elements für GPIO if defined
   {
     waitForGPIOLine = "<input type=submit value=\"Wait for GPIO" + String(startPin) + "\" " + stateNotInTimelapse + " name=WAITFORGPIO>";
@@ -311,6 +328,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   "<tr><td><a href=?function=SINGLE_SHOT><button " + stateNotInTimelapse + ">One Shot</button></a></td><td><a href=?function=REFRESH><button " + buttonState + ">Refresh</button></a></td></tr>"
                   "<tr><td><FONT SIZE=-1>Remaining delay:</td><td><FONT SIZE=-1>" + String(currentDelayToStart) + " sec</td></tr>"
                   "<tr><td><FONT SIZE=-1>Remaining shots:</td><td><FONT SIZE=-1>" + String(currentNShots) + "</td></tr>"
+                  "" + remainingTimeLine + ""
                   "</table></BR>"
                   "" + waitForGPIOLineHint + ""
                   "<FONT SIZE=-2>GPIO" + String(triggerPin) + " triggers camera shutter<BR>"
@@ -387,16 +405,38 @@ void clientOutAndStop(String sHdr, String sRespo)
   client.stop(); // and stop the client
 }
 
-void CheckAndProcessInputPin(int inputPin)
+void checkAndProcessStartPin()
 {
-  if (inputPin > -1) // Input pin defined
-    if (digitalRead(inputPin) == LOW) // start signal
+  if (startPin > -1) // Input pin defined
+    if (digitalRead(startPin) == LOW) // start signal
     {
-      while (digitalRead(inputPin) == LOW) // wait till button not pressed
+      while (digitalRead(startPin) == LOW) // wait till button not pressed
         delay(250);
       currentExecMode = TIMELAPSESTART;
       process_mode();
     }
+}
+
+void checkAndProcessAutoStart()
+{
+  if (currentTimelapseAutoStart == 1)
+  {
+    currentTimelapseAutoStart = 0;
+    currentExecMode = TIMELAPSESTART;
+    process_mode();
+  }
+}
+
+String getRemainingTimeStr(unsigned long sDelay, unsigned long nShots, unsigned long interval, unsigned long secCounter)
+{
+  int seconds = ((nShots * interval) + sDelay) - secCounter;
+  int days = seconds / 86400;
+  int hours  = seconds % 86400 / 3600;
+  int minutes  = seconds % 3600 / 60;
+  seconds = seconds % 60;
+  char timeFormat[100];
+  sprintf(timeFormat, "%02d:%02d:%02d:%02d", days, hours, minutes, seconds);
+  return String(timeFormat);
 }
 
 void trigger(triggerModes tMode)

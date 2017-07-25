@@ -50,16 +50,20 @@ Usage
 * At any time it is possible to stop the timelapse operation by pressing "Stop"
 * Timelapse mode only: "Refresh" will show how many seconds are left to start the timelapse and how many shots are left 
 * During timelapse mode the webGUI will refresh its page every 15 seconds
+* The remaining time for timelapse mode will be displayed in the form of Days:Hours:Minutes:Seconds
+* The total time can be calculated - without starting the timelapse mode - by entering the values for delay, number of shots and interval and then pressing the "Wait for GPIO" button
 * "Reset" will reset the delay to start, the number of shots and the time between shots to their default values
 * There is no need to shutdown the ESP8266, just remove the power
 
-"Headless" Mode
+"Headless" Mode and Autostart
 -
 * For the "headless" mode, configure all settings in the program and then upload it to the device
 * From then on, by triggering the start pin (e.g. GPIO5) the timelapse mode will start with these settings without the need to make a WiFi connection to the device
 * Use a push button or a sensor which connect the start pin to GND for a short time
 * Timelapse will start only after the low to high transition on the start pin
 * This mode comes in handy for wildlife photography etc.
+* Autostart works the same way, except a separate trigger on a GPIO pin is not needed
+* If autostart is enabled, the timelapse mode will start immediately as soon as power is applied
 
 Settings
 -
@@ -73,6 +77,7 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
 * default_autorefresh = 15 - In timelapse mode autorefresh webGUI every 15 seconds, 0 = autorefresh off
+* timelapseAutoStart = 0 - Autostart timelapse mode = 1, No autostart = 0
 
 Why you should choose a NodeMCU over any other ESP8266 device
 -
