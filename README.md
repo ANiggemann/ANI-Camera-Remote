@@ -6,7 +6,7 @@ The upper cable connects the device to a USB power bank, the lower cable is a re
 
 What you need
 -
-* ESP8266 device ([NodeMCU](https://en.wikipedia.org/wiki/NodeMCU) recommended)
+* ESP8266 device ([NodeMCU V2](https://en.wikipedia.org/wiki/NodeMCU) recommended)
 * Power supply (e.g. USB power bank)
   * If a USB power bank is used, a bank with an ON/OFF switch is preferable
 * USB cabel to upload the program
@@ -92,6 +92,8 @@ Why you should choose a NodeMCU over any other ESP8266 device
 * Support by a large community providing examples and instructions for free
 * Easy to mount on a breadboard (better than ESP-01 etc.)
 * Low cost (less than 10 Euro)
+* Try to get a version 2 (V2) variant of NodeMCU
+* V3 made by LiLon is much larger and will cover all lines on a breadboard
 
 License
 -
