@@ -69,7 +69,7 @@ Settings
 -
 The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * ssid = "ANI-CameraRemote" - WiFi SSID
-* password = "Remoter12345678" - Set to "" for open access point w/o passwortd
+* password = "Remoter12345678" - Set to "" for open access point w/o password
 * webServerPort = 80 - Port for web server
 * triggerPin = 2 - GPIO2 as trigger output
 * startPin = 5 - GPIO5 as start input for timelapse, -1 = deactivate input pin processing
