@@ -81,6 +81,7 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 
 Why you should choose a NodeMCU over any other ESP8266 device
 -
+![NodeMCU](misc/NodeMCU_1s.jpg)
 * NodeMCU contains everything to start the easy way in ESP8266 programming
   * Standard pin spacing (no SMD soldering)
   * Integrated antenna
