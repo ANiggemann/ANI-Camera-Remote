@@ -2,7 +2,7 @@
   ANI Camera Remote by Andreas Niggemann, 2017
   Versions:
   20170607 Base functions
-	20170613 Shot counter for WebGUI
+  20170613 Shot counter for WebGUI
   20170712 Defining triggerPin, settings
   20170717 Refactoring
   20170720 Bugfix: Restarting timelapse after reconnect removed
