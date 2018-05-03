@@ -11,9 +11,15 @@
   20170722 Input pin as timelapse start
   20170724 Setting for autostart timelapse mode
   20170724 Calculate remaining time
+  20180503 Preparatory work for M5Stack (display and keyboard)
   --------------------------------------------------*/
-
+#ifdef ESP32
+#include <M5Stack.h>
+#include <WiFi.h>
+#include <Free_Fonts.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 
 //--------------------------------------------------
 // Settings:
@@ -29,7 +35,7 @@ const int startPin = 5;                            // GPIO5 as start input for t
 const unsigned long default_delayToStart = 0;      // Delay in seconds till start of timelapse
 const unsigned long default_numberOfShots = 10;    // Number of shots in timelapse mode
 const unsigned long default_delayBetweenShots = 5; // Delay between shots in timelapse mode
-const unsigned long default_autorefresh = 15;      // In timelapse mode autorefresh webGUI every 15 seconds, 0 = autorefresh off
+const unsigned long default_autorefresh = 5;       // In timelapse mode autorefresh webGUI every 5 seconds, 0 = autorefresh off
 const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mode, 0 = No autostart
 
 // End of settings
@@ -62,6 +68,8 @@ int currentTimelapseAutoStart = timelapseAutoStart;
 unsigned long secCounter = 0; // count the seconds since start of timelapse
 unsigned long timeSlotCounter = 0; // count the timeslot since start of timelapse
 
+bool displayIsOn = true;
+
 String myIPStr = "";
 
 enum triggerModes { ON = 0, OFF = 1 };
@@ -72,21 +80,18 @@ execModes currentExecMode = NONE;
 
 // Create webserver on webServerPort
 WiFiServer server(webServerPort);
-
 WiFiClient client;
 
 void setup()
 {
+  displaySetup();
+
   pinMode(triggerPin, OUTPUT); // setup GPIO as camera trigger
   trigger(OFF);
   if (startPin > -1)
     pinMode(startPin, INPUT_PULLUP); // Setup GPIO input for start signal
 
-  WiFi.mode(WIFI_AP); // AP mode for connections
-  WiFi.softAP(ssid, password);
-  server.begin();
-  IPAddress ip = WiFi.softAPIP();
-  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+  setupWiFi();
 
   checkAndProcessAutoStart();
 }
@@ -98,6 +103,8 @@ void loop()
   process();
 
   checkAndProcessStartPin();
+
+  processKeyboard();
 
   client = server.available(); // Check if a client has connected
   String sRequest = getRequest(client);
@@ -335,6 +342,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   ;
   if (refreshLine != "")
     retVal += "<FONT SIZE=-2>Page will refresh every " + String(currentAutorefresh) +  " seconds<BR>";
+  onDisplay();
   return retVal;
 }
 
@@ -445,3 +453,81 @@ void trigger(triggerModes tMode)
   currentTriggerMode =  tMode;
 }
 
+#ifdef ESP32
+//void setupWiFi() { }
+void setupWiFi()
+{
+  WiFi.mode(WIFI_AP); // AP mode for connections
+  WiFi.softAP(ssid, password);
+  server.begin();
+  IPAddress ip = WiFi.softAPIP();
+  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+}
+
+void displaySetup()
+{
+  M5.begin();
+  onDisplay();
+}
+
+void onDisplay()
+{
+  int actuLine = 0;
+  M5.Lcd.fillScreen(TFT_BLACK);
+  M5.Lcd.setFreeFont(FF9);
+  outLCD(1, prgTitle + " " + prgVersion);
+  outLCD(2, "RESET");
+  outLCD(3, "Delay to Start: " + String(delayToStart));
+  outLCD(4, "Number of Shots: " + String(numberOfShots));
+  outLCD(5, "Interval: " + String(delayBetweenShots));
+  if (startPin > -1)
+    outLCD(6, "Wait for GPIO" + String(startPin));
+  outLCD(7, "START");
+  outLCD(8, "STOP");
+  outLCD(9, "ONE SHOT");
+  outLCD(10, "Remaining delay: " + String(currentDelayToStart));
+  outLCD(11, "Remaining shots: " + String(currentNShots));
+}
+
+void outLCD(int lineNumber, String outStr)
+{
+  const int lineFactor = 20;
+  M5.Lcd.setCursor(0, lineNumber * lineFactor);
+  M5.Lcd.printf(outStr.c_str());
+}
+
+void processKeyboard()
+{
+  // Will not work currently because of a glitch in the Arduino ESP32 IDF
+  // conflicts between WIFI and Buttons
+  // Later version will not need WIFI and will have a complete UI via display and buttons
+  if (M5.BtnA.pressedFor(1000)) // 1 second press to engage screen off or on
+  {
+    if (displayIsOn)
+    {
+      M5.Lcd.writecommand(ILI9341_DISPOFF);
+      M5.Lcd.setBrightness(0);
+      displayIsOn = false;
+    }
+    else
+    {
+      M5.Lcd.writecommand(ILI9341_DISPON);
+      M5.Lcd.setBrightness(50);
+      displayIsOn = true;
+    }
+  }
+}
+#else
+// Methods for ESP8266
+void setupWiFi()
+{
+  WiFi.mode(WIFI_AP); // AP mode for connections
+  WiFi.softAP(ssid, password);
+  server.begin();
+  IPAddress ip = WiFi.softAPIP();
+  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+}
+void displaySetup() { }
+void onDisplay() { }
+void processKeyboard() { }
+#endif
