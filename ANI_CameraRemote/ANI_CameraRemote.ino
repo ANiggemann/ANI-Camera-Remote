@@ -25,7 +25,7 @@
 // Settings:
 //
 const char* ssid = "ANI-CameraRemote";             // WiFi SSID
-const char* password = "Remoter12345678";          // set to "" for open access point w/o passwortd
+const char* password = "Remoter12345678";          // set to "" for open access point w/o password
 const int webServerPort = 80;                      // Port for web server
 
 const int triggerPin = 2;                          // GPIO2 as trigger output
@@ -66,7 +66,7 @@ unsigned long currentAutorefresh = 0;
 int currentTimelapseAutoStart = timelapseAutoStart;
 
 unsigned long secCounter = 0; // count the seconds since start of timelapse
-unsigned long timeSlotCounter = 0; // count the timeslot since start of timelapse
+unsigned long timeSlotCounter = 0; // count the timeslots since start of timelapse
 
 bool displayIsOn = true;
 

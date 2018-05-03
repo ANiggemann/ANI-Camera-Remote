@@ -9,7 +9,7 @@ What you need
 * ESP8266 device ([NodeMCU V2](https://en.wikipedia.org/wiki/NodeMCU) recommended)
 * Power supply (e.g. USB power bank)
   * If a USB power bank is used, a bank with an ON/OFF switch is preferable
-* USB cabel to upload the program
+* USB cable to upload the program
 * [Arduino IDE](https://www.arduino.cc/en/Main/Software)
 * [ESP8266 board manager](http://www.instructables.com/id/Quick-Start-to-Nodemcu-ESP8266-on-Arduino-IDE/)
 * Camera that can be controlled by a remote release via push button
@@ -81,6 +81,7 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 
 Why you should choose a NodeMCU over any other ESP8266 device
 -
+![NodeMCU](misc/NodeMCU_1s.jpg)
 * NodeMCU contains everything to start the easy way in ESP8266 programming
   * Standard pin spacing (no SMD soldering)
   * Integrated antenna
