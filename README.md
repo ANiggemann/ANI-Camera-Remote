@@ -11,7 +11,7 @@ What you need
   * If a USB power bank is used, a bank with an ON/OFF switch is preferable
 * USB cable to upload the program
 * [Arduino IDE](https://www.arduino.cc/en/Main/Software)
-* [ESP8266 board manager](http://www.instructables.com/id/Quick-Start-to-Nodemcu-ESP8266-on-Arduino-IDE/)
+* [ESP8266 board manager](http://www.instructables.com/id/Quick-Start-to-Nodemcu-ESP8266-on-Arduino-IDE/). V2.4.1 may cause webserver problems, use V2.4.0 instead
 * Camera that can be controlled by a remote release via push button
 * Remote release cable for your camera
 * Optional: Button or sensor on GPIO5 if you want to start timelapse externally (without WiFi control)
