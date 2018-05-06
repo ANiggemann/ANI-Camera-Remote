@@ -11,7 +11,8 @@
   20170722 Input pin as timelapse start
   20170724 Setting for autostart timelapse mode
   20170724 Calculate remaining time
-  20180503 Preparatory work for M5Stack (display and keyboard)
+  20180506 Preparatory work for M5Stack (display and keyboard)
+  20180506 Hint: Use ESP8266 V2.4.0 since V2.4.1 has problems
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -98,35 +99,10 @@ void setup()
 
 void loop()
 {
-  String sResponse, sHeader, sParam = "";
-
   process();
-
   checkAndProcessStartPin();
-
   processKeyboard();
-
-  client = server.available(); // Check if a client has connected
-  String sRequest = getRequest(client);
-  if (sRequest != "") // There is a request
-  {
-    bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
-    if (pathOK) // generate the html page
-    {
-      if (sParam != "")
-      {
-        extractParams(sParam);
-        process_mode();
-      }
-      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
-      generateOKHTML(sResponse, sHeader);
-    }
-    else // 404 if error
-      generateErrorHTML(sResponse, sHeader);
-    clientOutAndStop(sHeader, sResponse);
-  }
-  else
-    client.stop(); // stop client, if request is empty
+  processWebClient();
 }
 
 void process_mode()
@@ -475,23 +451,24 @@ void onDisplay()
   int actuLine = 0;
   M5.Lcd.fillScreen(TFT_BLACK);
   M5.Lcd.setFreeFont(FF9);
-  outLCD(1, prgTitle + " " + prgVersion);
-  outLCD(2, "RESET");
-  outLCD(3, "Delay to Start: " + String(delayToStart));
-  outLCD(4, "Number of Shots: " + String(numberOfShots));
-  outLCD(5, "Interval: " + String(delayBetweenShots));
+  outLCD(1, prgTitle + " " + prgVersion, TFT_BLUE);
+  outLCD(2, "Delay to Start: " + String(delayToStart), TFT_WHITE);
+  outLCD(3, "Number of Shots: " + String(numberOfShots), TFT_WHITE);
+  outLCD(4, "Interval: " + String(delayBetweenShots), TFT_WHITE);
   if (startPin > -1)
-    outLCD(6, "Wait for GPIO" + String(startPin));
-  outLCD(7, "START");
-  outLCD(8, "STOP");
-  outLCD(9, "ONE SHOT");
-  outLCD(10, "Remaining delay: " + String(currentDelayToStart));
-  outLCD(11, "Remaining shots: " + String(currentNShots));
+    outLCD(5, "Wait for GPIO" + String(startPin), TFT_WHITE);
+  outLCD(6, "START", TFT_WHITE);
+  outLCD(7, "STOP", TFT_WHITE);
+  outLCD(8, "ONE SHOT", TFT_WHITE);
+  outLCD(9, "RESET", TFT_WHITE);
+  outLCD(10, "Remaining delay: " + String(currentDelayToStart), TFT_WHITE);
+  outLCD(11, "Remaining shots: " + String(currentNShots), TFT_WHITE);
 }
 
-void outLCD(int lineNumber, String outStr)
+void outLCD(int lineNumber, String outStr, int textColor)
 {
   const int lineFactor = 20;
+  M5.Lcd.setTextColor(lineNumber == highlightLine ? TFT_RED : textColor);
   M5.Lcd.setCursor(0, lineNumber * lineFactor);
   M5.Lcd.printf(outStr.c_str());
 }
@@ -517,6 +494,7 @@ void processKeyboard()
     }
   }
 }
+void processWebClient() { }
 #else
 // Methods for ESP8266
 void setupWiFi()
@@ -530,4 +508,30 @@ void setupWiFi()
 void displaySetup() { }
 void onDisplay() { }
 void processKeyboard() { }
+void processWebClient()
+{
+  String sResponse, sHeader, sParam = "";
+
+  client = server.available(); // Check if a client has connected
+  String sRequest = getRequest(client);
+  if (sRequest != "") // There is a request
+  {
+    bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
+    if (pathOK) // generate the html page
+    {
+      if (sParam != "")
+      {
+        extractParams(sParam);
+        process_mode();
+      }
+      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
+      generateOKHTML(sResponse, sHeader);
+    }
+    else // 404 if error
+      generateErrorHTML(sResponse, sHeader);
+    clientOutAndStop(sHeader, sResponse);
+  }
+  else
+    client.stop(); // stop client, if request is empty
+}
 #endif
