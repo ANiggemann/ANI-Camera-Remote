@@ -1,5 +1,6 @@
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
+(Description for M5Stack (ESP32) usage coming soon...)
 ![First Remoter](misc/First_Remoter.jpg)
 
 The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
