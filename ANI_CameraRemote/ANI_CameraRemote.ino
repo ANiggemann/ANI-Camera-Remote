@@ -1,5 +1,5 @@
 /*--------------------------------------------------
-  ANI Camera Remote by Andreas Niggemann, 2017
+  ANI Camera Remote by Andreas Niggemann, 2018
   Versions:
   20170607 Base functions
   20170613 Shot counter for WebGUI
@@ -13,6 +13,7 @@
   20170724 Calculate remaining time
   20180506 Preparatory work for M5Stack (display and keyboard)
   20180506 Hint: Use ESP8266 V2.4.0 since V2.4.1 has problems
+  20180510 First Version for M5Stack 
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -28,6 +29,8 @@
 const char* ssid = "ANI-CameraRemote";             // WiFi SSID
 const char* password = "Remoter12345678";          // set to "" for open access point w/o password
 const int webServerPort = 80;                      // Port for web server
+
+const int screenSaverTime = 60;                    // M5Stack: Switch off screen after 60 seconds of inactivity
 
 const int triggerPin = 2;                          // GPIO2 as trigger output
 const int startPin = 5;                            // GPIO5 as start input for timelapse, -1 = deactivate input pin processing
@@ -47,12 +50,12 @@ const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mo
 
 // Global variables
 const String prgTitle = "ANI Camera Remote";
-const String prgVersion = "1.2";
-const int versionMonth = 7;
-const int versionYear = 2017;
+const String prgVersion = "1.3";
+const int versionMonth = 5;
+const int versionYear = 2018;
 
 const int timeSlot = 250; // timeslot in ms
-const int timeSlotsPerSecond = 4;
+const int timeSlotsPerSecond = 1000 / timeSlot;
 
 unsigned long delayToStart = default_delayToStart;
 unsigned long numberOfShots = default_numberOfShots;
@@ -69,10 +72,14 @@ int currentTimelapseAutoStart = timelapseAutoStart;
 unsigned long secCounter = 0; // count the seconds since start of timelapse
 unsigned long timeSlotCounter = 0; // count the timeslots since start of timelapse
 
-bool displayIsOn = true;
+int highlightLine = 2;
+unsigned long inactivityCounter = 0;
+unsigned long previousMilliseconds = millis();
 
 String myIPStr = "";
 
+enum lcdState { LCDOFF, LCDON };
+bool lcdIsON = true;
 enum triggerModes { ON = 0, OFF = 1 };
 triggerModes currentTriggerMode = OFF;
 enum execModes { NONE, ONESHOT, TIMELAPSESTART, TIMELAPSERUNNING, TIMELAPSESTOP, WAITFORGPIO, REFRESH, RESET };
@@ -103,6 +110,48 @@ void loop()
   checkAndProcessStartPin();
   processKeyboard();
   processWebClient();
+}
+
+void setupWiFi()
+{
+  WiFi.mode(WIFI_AP); // AP mode for connections
+  WiFi.softAP(ssid, password);
+  server.begin();
+  IPAddress ip = WiFi.softAPIP();
+  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+}
+
+void processWebClient()
+{
+  String sResponse, sHeader, sParam = "";
+
+  client = server.available(); // Check if a client has connected
+  String sRequest = getRequest(client);
+  if (sRequest != "") // There is a request
+  {
+    bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
+    if (pathOK) // generate the html page
+    {
+      if (sParam != "")
+      {
+        extractParams(sParam);
+        process_mode();
+      }
+      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
+      generateOKHTML(sResponse, sHeader);
+    }
+    else // 404 if error
+      generateErrorHTML(sResponse, sHeader);
+    clientOutAndStop(sHeader, sResponse);
+  }
+  else
+    client.stop(); // stop client, if request is empty
+}
+
+void setAndDoProcessMode(execModes newExecMode)
+{
+  currentExecMode = newExecMode;
+  process_mode();
 }
 
 void process_mode()
@@ -159,8 +208,11 @@ void process_mode()
 
 void process()
 {
+  checkInactivity();
+
   if ((currentExecMode == NONE) || (currentExecMode == TIMELAPSESTOP) || (currentExecMode == WAITFORGPIO))
     return;
+
   unsigned long currentTimeSlotMillis = millis();
   if ((currentTimeSlotMillis - previousTimeSlotMillis) > timeSlot) // 250 ms time slot
   {
@@ -180,9 +232,13 @@ void process()
       timeSlotCounter = 0;
 
       if (currentDelayToStart > 0) // Start delay
+      {
         currentDelayToStart--;
+        onDisplay();
+      }
       else if (currentDelayBetweenShots > 0)
         if ((secCounter % currentDelayBetweenShots ) == 0) // Delay between shots
+        {
           if (currentNShots >= 1) // more than one shot timelapse?
           {
             if (currentTriggerMode == OFF)
@@ -190,6 +246,8 @@ void process()
             currentNShots--;
             NumberOfShotsSinceStart++;
           }
+          onDisplay();
+        }
     }
   }
 }
@@ -318,7 +376,6 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   ;
   if (refreshLine != "")
     retVal += "<FONT SIZE=-2>Page will refresh every " + String(currentAutorefresh) +  " seconds<BR>";
-  onDisplay();
   return retVal;
 }
 
@@ -396,8 +453,7 @@ void checkAndProcessStartPin()
     {
       while (digitalRead(startPin) == LOW) // wait till button not pressed
         delay(250);
-      currentExecMode = TIMELAPSESTART;
-      process_mode();
+      setAndDoProcessMode(TIMELAPSESTART);
     }
 }
 
@@ -406,8 +462,7 @@ void checkAndProcessAutoStart()
   if (currentTimelapseAutoStart == 1)
   {
     currentTimelapseAutoStart = 0;
-    currentExecMode = TIMELAPSESTART;
-    process_mode();
+    setAndDoProcessMode(TIMELAPSESTART);
   }
 }
 
@@ -429,17 +484,11 @@ void trigger(triggerModes tMode)
   currentTriggerMode =  tMode;
 }
 
+/*--------------------------------------------------
+  Board specific methods
+  Supported: ESP8266 and ESP32 (M5Stack)
+  --------------------------------------------------*/
 #ifdef ESP32
-//void setupWiFi() { }
-void setupWiFi()
-{
-  WiFi.mode(WIFI_AP); // AP mode for connections
-  WiFi.softAP(ssid, password);
-  server.begin();
-  IPAddress ip = WiFi.softAPIP();
-  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
-}
-
 void displaySetup()
 {
   M5.begin();
@@ -457,12 +506,12 @@ void onDisplay()
   outLCD(4, "Interval: " + String(delayBetweenShots), TFT_WHITE);
   if (startPin > -1)
     outLCD(5, "Wait for GPIO" + String(startPin), TFT_WHITE);
-  outLCD(6, "START", TFT_WHITE);
-  outLCD(7, "STOP", TFT_WHITE);
-  outLCD(8, "ONE SHOT", TFT_WHITE);
-  outLCD(9, "RESET", TFT_WHITE);
-  outLCD(10, "Remaining delay: " + String(currentDelayToStart), TFT_WHITE);
-  outLCD(11, "Remaining shots: " + String(currentNShots), TFT_WHITE);
+  outLCD(6, "START", TFT_YELLOW);
+  outLCD(7, "STOP", TFT_YELLOW);
+  outLCD(8, "ONE SHOT", TFT_YELLOW);
+  outLCD(9, "RESET", TFT_YELLOW);
+  outLCD(10, "Remaining delay: " + String(currentDelayToStart), TFT_GREEN);
+  outLCD(11, "Remaining shots: " + String(currentNShots), TFT_GREEN);
 }
 
 void outLCD(int lineNumber, String outStr, int textColor)
@@ -473,65 +522,88 @@ void outLCD(int lineNumber, String outStr, int textColor)
   M5.Lcd.printf(outStr.c_str());
 }
 
-void processKeyboard()
+void switchScreenOnOff(lcdState dState)
 {
-  // Will not work currently because of a glitch in the Arduino ESP32 IDF
-  // conflicts between WIFI and Buttons
-  // Later version will not need WIFI and will have a complete UI via display and buttons
-  if (M5.BtnA.pressedFor(1000)) // 1 second press to engage screen off or on
+  if (dState == LCDON)
   {
-    if (displayIsOn)
-    {
-      M5.Lcd.writecommand(ILI9341_DISPOFF);
-      M5.Lcd.setBrightness(0);
-      displayIsOn = false;
-    }
-    else
-    {
-      M5.Lcd.writecommand(ILI9341_DISPON);
-      M5.Lcd.setBrightness(50);
-      displayIsOn = true;
-    }
-  }
-}
-void processWebClient() { }
-#else
-// Methods for ESP8266
-void setupWiFi()
-{
-  WiFi.mode(WIFI_AP); // AP mode for connections
-  WiFi.softAP(ssid, password);
-  server.begin();
-  IPAddress ip = WiFi.softAPIP();
-  myIPStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
-}
-void displaySetup() { }
-void onDisplay() { }
-void processKeyboard() { }
-void processWebClient()
-{
-  String sResponse, sHeader, sParam = "";
-
-  client = server.available(); // Check if a client has connected
-  String sRequest = getRequest(client);
-  if (sRequest != "") // There is a request
-  {
-    bool pathOK = checkPathAndGetParameters(sRequest, sParam); // get parameters from request, check path
-    if (pathOK) // generate the html page
-    {
-      if (sParam != "")
-      {
-        extractParams(sParam);
-        process_mode();
-      }
-      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
-      generateOKHTML(sResponse, sHeader);
-    }
-    else // 404 if error
-      generateErrorHTML(sResponse, sHeader);
-    clientOutAndStop(sHeader, sResponse);
+    M5.Lcd.writecommand(ILI9341_DISPON);
+    M5.Lcd.setBrightness(20);
   }
   else
-    client.stop(); // stop client, if request is empty
+  {
+    M5.Lcd.writecommand(ILI9341_DISPOFF);
+    M5.Lcd.setBrightness(0);
+  }
+  lcdIsON = (dState == LCDON);
 }
+
+void checkInactivity()
+{
+  unsigned long currentMilliseconds = millis();
+  if ((currentMilliseconds - previousMilliseconds) > 1000)
+  {
+    inactivityCounter++;
+    if (inactivityCounter > screenSaverTime)
+    {
+      inactivityCounter = 0;
+      switchScreenOnOff(LCDOFF);
+    }
+    previousMilliseconds = currentMilliseconds;
+  }
+}
+
+long limitsUpDown(int upDownFactor, long number, long lowerLimit, int upperLimit)
+{
+  long retVal = number + upDownFactor;
+  retVal = (retVal >= lowerLimit) ? retVal : lowerLimit;
+  retVal = (retVal <= upperLimit) ? retVal : upperLimit;
+  return retVal;
+}
+
+void changeValueOrExecFunction(int upDownFactor, int lineNumber)
+{
+  switch (lineNumber)
+  {
+    case 2: delayToStart = limitsUpDown(upDownFactor, delayToStart, 0, LONG_MAX); break;
+    case 3: numberOfShots = limitsUpDown(upDownFactor, numberOfShots, 1, LONG_MAX) ; break;
+    case 4: delayBetweenShots = limitsUpDown(upDownFactor, delayBetweenShots, 1, LONG_MAX); break;
+    case 5: setAndDoProcessMode(WAITFORGPIO); break;
+    case 6: setAndDoProcessMode(TIMELAPSESTART); break;
+    case 7: setAndDoProcessMode(TIMELAPSESTOP); break;
+    case 8: setAndDoProcessMode(ONESHOT); break;
+    case 9: setAndDoProcessMode(RESET); break;
+  }
+}
+
+void processKeyboard()
+{
+  delay(100);
+  bool buttonPressed = M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed();
+  bool plusMinusPressed = M5.BtnA.isPressed() || M5.BtnB.isPressed();
+  if (buttonPressed)
+  {
+    inactivityCounter = 0;
+    if (!lcdIsON) // LCD is in screensaver mode so we had to switch it on
+      switchScreenOnOff(LCDON);
+    else
+    {
+      int upDownFaktor = (M5.BtnA.isPressed()) ? +1 : -1;
+      if (plusMinusPressed)
+      {
+        upDownFaktor = M5.BtnC.isPressed() ? (upDownFaktor * 10) : upDownFaktor;
+        changeValueOrExecFunction(upDownFaktor, highlightLine);
+      }
+      else if (M5.BtnC.wasPressed()) // Only Button C: Move from line to line
+        highlightLine = (highlightLine > 8) ? 2 : highlightLine + 1;
+      onDisplay();
+    }
+  }
+  M5.update();
+}
+#else
+// Methods for ESP8266
+void displaySetup() { }
+void onDisplay() { }
+void checkInactivity() { }
+void processKeyboard() { }
 #endif
