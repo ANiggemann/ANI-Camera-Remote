@@ -522,7 +522,7 @@ void onDisplay(lcdScreens screen)
         outLCD(3, "Number of Shots: " + String(numberOfShots), TFT_WHITE);
         outLCD(4, "Interval: " + String(delayBetweenShots), TFT_WHITE);
         if (startPin > -1)
-          outLCD(5, "Wait for GPIO" + String(startPin), TFT_WHITE);
+          outLCD(5, "Wait for GPIO" + String(startPin), TFT_YELLOW);
         outLCD(6, "START", TFT_YELLOW);
         outLCD(7, "STOP", TFT_YELLOW);
         outLCD(8, "ONE SHOT", TFT_YELLOW);
@@ -623,24 +623,22 @@ long limitsUpDown(int upDownFactor, long number, long lowerLimit, int upperLimit
 
 void processKeyboard()
 {
-  delay(100);
-  bool buttonPressed = M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed();
-  bool plusMinusPressed = M5.BtnA.isPressed() || M5.BtnB.isPressed();
-  if (buttonPressed)
+  if (M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed())
   {
+    delay(100);
     inactivityCounter = 0;
     if (!lcdIsON) // LCD is in screensaver mode so we had to switch it on
       switchScreenOnOff(LCDON);
     else
     {
       int upDownFactor = M5.BtnA.isPressed() ? +1 : -1;
-      if (plusMinusPressed)
+      if (M5.BtnA.isPressed() || M5.BtnB.isPressed())
       {
         int scaleFactor = 1;
         scaleFactor = M5.BtnC.isPressed() ? 100 : 1;
         changeValueOrExecFunction(upDownFactor * scaleFactor, actuScreen, highlightLine);
       }
-      else if (M5.BtnC.wasPressed()) // Only Button C: Move from line to line
+      else if (M5.BtnC.wasPressed()) // Only button C: Move from line to line
         highlightLine = (highlightLine >= lastDialogLine) ? 2 : highlightLine + 1;
       else if (M5.BtnC.pressedFor(5000)) // Enter config menu after 5 seconds press on button C
         actuScreen = CONFIGSCREEN;
