@@ -1,7 +1,8 @@
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
 
-(Description for M5Stack (ESP32) usage coming soon...)
+[M5tack variant](#m5stack)
+
 
 ![First Remoter](misc/First_Remoter.jpg)
 
@@ -98,6 +99,10 @@ Why you should choose a NodeMCU over any other ESP8266 device
 * Low cost (less than 10 Euro)
 * Try to get a version 2 (V2) variant of NodeMCU
 * V3 made by LiLon is much larger and will cover all lines on a breadboard
+
+#M5Stack
+![M5Stack with extra battery (850mAh)](misc/M5Stack.jpg)
+![M5Stack user interface](misc/M5Stack_UI.jpg)
 
 License
 -
