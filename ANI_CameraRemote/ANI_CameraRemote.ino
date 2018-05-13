@@ -650,7 +650,7 @@ void processKeyboard()
 #else
 // Methods for ESP8266
 void displaySetup() { }
-void onDisplay() { }
+void onDisplay(lcdScreens screen) { }
 void checkInactivity() { }
 void processKeyboard() { }
 #endif
