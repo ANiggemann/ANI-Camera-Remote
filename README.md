@@ -96,7 +96,7 @@ Why you should choose a NodeMCU over any other ESP8266 device
   * No need to connect GPIO0 to GND for programming mode
   * Integrated LED on GPIO2
   * No need for an extra CP2102 interface, a CH340G is build in	
-  * Programming in LUA or c++
+  * Programming in LUA or C++
 * Support by a large community providing examples and instructions for free
 * Easy to mount on a breadboard (better than ESP-01 etc.)
 * Low cost (less than 10 Euro)
@@ -108,11 +108,11 @@ Why you should choose a NodeMCU over any other ESP8266 device
 ![M5Stack user interface](misc/M5Stack_UI.jpg)
 
 The M5Stack provides a casing, buttons and a display. This allows us to construct a self-contained Camera-Remote without the need for a WiFi connection.
-* Install the M5Stack from the project web site ([M5Stack on Github](https://github.com/m5stack/M5Stack)
+* Install the M5Stack from the project web site ([M5Stack on Github](https://github.com/m5stack/M5Stack))
 * Choose the M5Stack board in Arduino IDE
 * Set the COM port where the M5Stack is connected to
 * Compile and upload ANI_CameraRemote.ino to the M5Stack
-** The sketch takes care of the correct board by conditional compile for ESP8266 or EPS32 (M5Stack)
+ * The sketch takes care of the correct board by conditional compile for ESP8266 or EPS32 (M5Stack)
 * Connect GPIO2 and GND to the camera. Pin assignment can be found on the bottom of the M5Stack
 
 Usage
@@ -122,7 +122,7 @@ Usage
 * The middle button (button B) decreases the value (white lines) or activates the function (yellow lines)
 * Value change can be speed up by pressing and holding the direction button (A or B) and then pressing and holding button C
 * The screen will go blank after 60 seconds (s. settings) and can be activated again by pressing any button (A,B or C)
-* The M5Stack can be turned off by double clicking the red button on the side
+* The M5Stack can be turned off by double clicking the red button on the side of the unit
 * Pressing and holding the C button for 5 seconds activates the Configuration Menu
   * WiFi can be turned ON (standard is OFF after starting the ANI-Camera-Remote on the M5Stack)
   * WiFi can be turned OFF. This will result in a restart as well
