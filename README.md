@@ -3,10 +3,11 @@ Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikiped
 
 [M5Stack variant](#m5stack)
 
-
 ![First Remoter](misc/First_Remoter.jpg)
+* The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
 
-The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
+![Second Remoter](misc/Second_Remoter.jpg)
+* This is the second unit (using the NodeMCU).  It contains the USB power bank, the longer cable is a remote release cable for Sony cameras
 
 What you need
 -
@@ -110,20 +111,22 @@ The M5Stack provides a casing, buttons and a display. This allows us to construc
 * Choose the M5Stack board in Arduino IDE
 * Set the COM port where the M5Stack is connected to
 * Compile and upload ANI_CameraRemote.ino to the M5Stack
-** The Sketch takes care of the correct board by conditional compile for ESP8266 or EPS32 (M5Stack)
+** The sketch takes care of the correct board by conditional compile for ESP8266 or EPS32 (M5Stack)
 * Connect GPIO2 and GND to the camera. Pin assignment can be found on the bottom of the M5Stack
 
 Usage
 -
 * The right button (button C) moves the selector (red line) down
 * The left button (button A) increases the value (white lines) or activates the function (yellow lines)
-* The middle button (button B) decreases the value (whie lines) or activates the function (yellow lines)
-* Value change can be speed up by pressing and holding the direction button (A oder B) and then pressing and holding button C
+* The middle button (button B) decreases the value (white lines) or activates the function (yellow lines)
+* Value change can be speed up by pressing and holding the direction button (A or B) and then pressing and holding button C
 * The screen will go blank after 60 seconds (s. settings) and can be activated again by pressing any button (A,B or C)
 * The M5Stack can be turned off by double clicking the red button on the side
 * Pressing and holding the C button for 5 seconds activates the Configuration Menu
-** WiFi can be turned ON (standard is OFF after starting the ANI-Camera-Remote on the M5Stack)
-** WiFi can be turned OFF. This will result in a restart as well
+  * WiFi can be turned ON (standard is OFF after starting the ANI-Camera-Remote on the M5Stack)
+  * WiFi can be turned OFF. This will result in a restart as well
+* The WiFi connection and webGUI can be used in parallel to the M5Stack UI  
+* Turning off the WiFi reduces the energy consumption
 
 License
 -
