@@ -1,7 +1,7 @@
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
 
-[M5tack variant](#m5stack)
+[M5Stack variant](#m5stack)
 
 
 ![First Remoter](misc/First_Remoter.jpg)
@@ -100,9 +100,18 @@ Why you should choose a NodeMCU over any other ESP8266 device
 * Try to get a version 2 (V2) variant of NodeMCU
 * V3 made by LiLon is much larger and will cover all lines on a breadboard
 
-#M5Stack
+# M5Stack
 ![M5Stack with extra battery (850mAh)](misc/M5Stack.jpg)
 ![M5Stack user interface](misc/M5Stack_UI.jpg)
+
+**Why using the M5Stack for the ANI-Camera-Remote?**
+The M5Stack provides a casing, buttons and a display. This allows us to construct a self-contained Camera-Remote without the need for a WiFi connection.
+* Install the M5Stack from the project web site ([M5Stack on Github](https://github.com/m5stack/M5Stack)
+* Choose the M5Stack board in Arduino IDE
+* Set the COM port where the M5Stack is connected to
+* Compile and upload ANI_CameraRemote.ino to the M5Stack
+** The Sketch takes care of the correct board by conditional compile for ESP8266 or EPS32 (M5Stack)
+* Connect GPIO2 and GND to the camera
 
 License
 -
