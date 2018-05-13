@@ -3,11 +3,10 @@ Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikiped
 
 [M5Stack variant](#m5stack)
 
-![First Remoter](misc/First_Remoter.jpg)
-* The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras
-
-![Second Remoter](misc/Second_Remoter.jpg)
-* This is the second unit (using the NodeMCU).  It contains the USB power bank, the longer cable is a remote release cable for Sony cameras
+First Remoter | Second Remoter
+------------- | -------------
+![First Remoter](misc/First_Remoter.jpg) |![Second Remoter](misc/Second_Remoter.jpg)
+The upper cable connects the device to a USB power bank, the lower cable is a remote release cable for Samsung NX cameras|This is the second unit (using NodeMCU).  It contains the USB power bank, the longer cable is a remote release cable for Sony cameras
 
 What you need
 -
@@ -46,7 +45,9 @@ What to do
 
 WebGUI
 -
-![webGUI](misc/webGUI_ANI_Camera_Remote.png) ![webGUI Autorefresh](misc/webGUI_ANI_Camera_Remote_autorefresh.png)
+Start screen | Autorefresh during intervalls
+------------ | -------------
+![webGUI](misc/webGUI_ANI_Camera_Remote.png)|![webGUI Autorefresh](misc/webGUI_ANI_Camera_Remote_autorefresh.png)
 
 Usage
 -
