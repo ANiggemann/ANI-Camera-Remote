@@ -1,5 +1,5 @@
 # ANI-Camera-Remote
-Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266)
+Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266) and [ESP32](https://en.wikipedia.org/wiki/ESP32)
 
 [M5Stack variant](#m5stack)
 
