@@ -15,6 +15,8 @@
   20180506 Hint: Use ESP8266 V2.4.0 since V2.4.1 has problems
   20180510 First Version for M5Stack
   20180511 M5Stack: WiFi OFF by default, config menu, C button as value accelerator
+  20180528 Setting for trigger duration
+  20180528 Preparatory work for timetable
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -42,6 +44,7 @@ const int startPin = 5;                            // GPIO5 as start input for t
 const unsigned long default_delayToStart = 0;      // Delay in seconds till start of timelapse
 const unsigned long default_numberOfShots = 10;    // Number of shots in timelapse mode
 const unsigned long default_delayBetweenShots = 5; // Delay between shots in timelapse mode
+const unsigned long default_triggerDuration = 0;   // Duration of trigger ON in seconds (0 = 250ms)
 const unsigned long default_autorefresh = 5;       // In timelapse mode autorefresh webGUI every 5 seconds, 0 = autorefresh off
 const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mode, 0 = No autostart
 
@@ -53,7 +56,7 @@ const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mo
 
 // Global variables
 const String prgTitle = "ANI Camera Remote";
-const String prgVersion = "1.3";
+const String prgVersion = "1.4";
 const String screenHeaderLine = prgTitle + " " + prgVersion;
 const int versionMonth = 5;
 const int versionYear = 2018;
@@ -61,20 +64,37 @@ const int versionYear = 2018;
 const int timeSlot = 250; // timeslot in ms
 const int timeSlotsPerSecond = 1000 / timeSlot;
 
+// timeTable syntax:
+// Elements separated by comma
+// Elements can be:
+//   Delay between shots in seconds (e.g. 5)
+//   Repeat number * Delay between shots in seconds (e.g. 1000*13)
+//   _ and delay in seconds (do nothing) (e.g. _3600)
+//   ! and duration for trigger ON in seconds (e.g. !2), 0 = 250ms
+//
+// Examples:
+//   10,15,20,25,30
+//   _18000,50000*5,20000*10
+//   !5,50000*10
+String timeTable = ""; // only loadable via GET parameters, not in UI
+
 unsigned long delayToStart = default_delayToStart;
 unsigned long numberOfShots = default_numberOfShots;
 unsigned long delayBetweenShots = default_delayBetweenShots;
+unsigned long triggerDuration = default_triggerDuration;
 unsigned long autorefresh = default_autorefresh;
 unsigned long previousTimeSlotMillis = 0;
 unsigned long currentDelayToStart = 0;
 unsigned long currentNShots = 0;
-unsigned long NumberOfShotsSinceStart = 0; //
+unsigned long currentTDuration = 0;
+unsigned long NumberOfShotsSinceStart = 0;
 unsigned long currentDelayBetweenShots = 0;
+unsigned long currentTriggerDuration = 0;
 unsigned long currentAutorefresh = 0;
 int currentTimelapseAutoStart = timelapseAutoStart;
 
 unsigned long secCounter = 0; // count the seconds since start of timelapse
-unsigned long timeSlotCounter = 0; // count the timeslots since start of timelapse
+unsigned long timeSlotCounter = 0; // count the timeslots in a second
 
 int highlightLine = 2;
 int lastDialogLine = 8;
@@ -114,7 +134,7 @@ void setup()
 
 void loop()
 {
-  process();
+  processTimeSlots();
   checkAndProcessStartPin();
   processKeyboard();
   if (wifiON)
@@ -149,7 +169,7 @@ void processWebClient()
         extractParams(sParam);
         process_mode();
       }
-      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots);
+      sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots, triggerDuration);
       generateOKHTML(sResponse, sHeader);
     }
     else // 404 if error
@@ -175,6 +195,8 @@ void process_mode()
     currentDelayToStart = 0;
     currentNShots = 0;
     currentDelayBetweenShots = 0;
+    currentTriggerDuration = 0;
+    currentTDuration = 0;
     currentExecMode == NONE;
   }
   else if (currentExecMode == TIMELAPSESTOP)
@@ -190,7 +212,9 @@ void process_mode()
     delayToStart = default_delayToStart;
     numberOfShots = default_numberOfShots;
     delayBetweenShots = default_delayBetweenShots;
+    triggerDuration = default_triggerDuration;
     currentNShots = 0;
+    currentTDuration = 0;
     trigger(OFF);
     currentExecMode = NONE;
   }
@@ -205,6 +229,8 @@ void process_mode()
     timeSlotCounter = 0;
     currentDelayToStart = delayToStart;
     currentDelayBetweenShots = delayBetweenShots;
+    currentTriggerDuration = triggerDuration;
+    currentTDuration = triggerDuration;
     NumberOfShotsSinceStart = 0;
     if (delayToStart == 0)
     {
@@ -218,7 +244,7 @@ void process_mode()
   previousTimeSlotMillis = millis();
 }
 
-void process()
+void processTimeSlots()
 {
   checkInactivity();
 
@@ -226,16 +252,13 @@ void process()
     return;
 
   unsigned long currentTimeSlotMillis = millis();
+
   if ((currentTimeSlotMillis - previousTimeSlotMillis) > timeSlot) // 250 ms time slot
   {
-    if (currentTriggerMode == ON)
-    {
-      trigger(OFF);
-      if ((currentNShots <= 0) && (currentExecMode == TIMELAPSERUNNING))  // End of Timelapse mode
-        currentExecMode = TIMELAPSESTOP;
-    }
-
     previousTimeSlotMillis = currentTimeSlotMillis;
+
+    if ((currentTriggerMode == ON) && (currentTDuration == 0)) // only if trigger duration is 250ms
+      switchTriggerOffAndCheckStatus();
 
     timeSlotCounter++; // Count the timeslots
     if (timeSlotCounter == timeSlotsPerSecond)
@@ -243,13 +266,20 @@ void process()
       secCounter++; // Count the seconds
       timeSlotCounter = 0;
 
+      if ((currentTriggerMode == ON) && (currentTDuration > 0))
+      {
+        currentTDuration--;
+        if (currentTDuration == 0)
+          switchTriggerOffAndCheckStatus();
+      }
+
       if (currentDelayToStart > 0) // Start delay
       {
         currentDelayToStart--;
         onDisplay(MAINSCREEN);
       }
       else if (currentDelayBetweenShots > 0)
-        if ((secCounter % currentDelayBetweenShots ) == 0) // Delay between shots
+        if ((secCounter % currentDelayBetweenShots) == 0) // Delay between shots
         {
           if (currentNShots >= 1) // more than one shot timelapse?
           {
@@ -262,6 +292,14 @@ void process()
         }
     }
   }
+}
+
+void switchTriggerOffAndCheckStatus()
+{
+  trigger(OFF);
+  currentTDuration = currentTriggerDuration;
+  if ((currentNShots <= 0) && (currentExecMode == TIMELAPSERUNNING))  // End of Timelapse mode
+    currentExecMode = TIMELAPSESTOP;
 }
 
 void extractParams(String params)
@@ -318,12 +356,16 @@ void setTimelapseParams(String params) // Set timelapse parameters for modes WAI
         numberOfShots = elemValue.toInt();
       if (elemName == "DELAYBETWEENSHOTS")
         delayBetweenShots = elemValue.toInt();
+      if (elemName == "TRIGGERDURATION")
+        triggerDuration = elemValue.toInt();
+      if (elemName == "TIMETABLE")
+        timeTable = elemValue;
     }
     idx = par.indexOf("&");
   }
 }
 
-String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval)
+String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned long interval, unsigned long tDuration)
 {
   String refreshLine = "";
   String remainingTimeLine = "";
@@ -368,6 +410,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
                   "<tr><td>Delay to start:</td><td><input " + stateNotInTimelapse + " id=delayToStart name=delayToStart type=number min=0 step=1 value=" + String(sDelay) + "> sec</td></tr>"
                   "<tr><td>Number of shots:</td><td><input " + stateNotInTimelapse + " id=numberOfShots name=numberOfShots type=number min=1 step=1 value=" + String(nShots) + "></td></tr>"
                   "<tr><td>Interval:</td><td><input " + stateNotInTimelapse + " id=delayBetweenShots name=delayBetweenShots type=number min=1 step=1 value=" + String(interval) + "> sec</td></tr>"
+                  "<tr><td>Trigger duration (0=250ms):</td><td><input " + stateNotInTimelapse + " id=triggerDuration name=triggerDuration type=number min=0 step=1 value=" + String(tDuration) + "> sec</td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td></td><td></td></tr>"
                   "<tr><td>" + waitForGPIOLine + ""
@@ -521,15 +564,15 @@ void onDisplay(lcdScreens screen)
         outLCD(2, "Delay to Start: " + String(delayToStart), TFT_WHITE);
         outLCD(3, "Number of Shots: " + String(numberOfShots), TFT_WHITE);
         outLCD(4, "Interval: " + String(delayBetweenShots), TFT_WHITE);
+        outLCD(5, "Trigger duration: " + String(triggerDuration), TFT_WHITE);
         if (startPin > -1)
-          outLCD(5, "Wait for GPIO" + String(startPin), TFT_YELLOW);
-        outLCD(6, "START", TFT_YELLOW);
-        outLCD(7, "STOP", TFT_YELLOW);
-        outLCD(8, "ONE SHOT", TFT_YELLOW);
-        outLCD(9, "RESET", TFT_YELLOW);
-        outLCD(10, "Remaining delay: " + String(currentDelayToStart), TFT_GREEN);
-        outLCD(11, "Remaining shots: " + String(currentNShots), TFT_GREEN);
-        lastDialogLine = 9;
+          outLCD(6, "Wait for GPIO" + String(startPin), TFT_YELLOW);
+        outLCD(7, "START", TFT_YELLOW);
+        outLCD(8, "STOP", TFT_YELLOW);
+        outLCD(9, "ONE SHOT", TFT_YELLOW);
+        outLCD(10, "RESET", TFT_YELLOW);
+        outLCD(11, "Rem. delay: " + String(currentDelayToStart) + " shots: " + String(currentNShots), TFT_GREEN);
+        lastDialogLine = 10;
         break;
       }
     case CONFIGSCREEN:
@@ -554,11 +597,12 @@ void changeValueOrExecFunction(int upDownFactor, lcdScreens screen, int lineNumb
           case 2: delayToStart = limitsUpDown(upDownFactor, delayToStart, 0, LONG_MAX); break;
           case 3: numberOfShots = limitsUpDown(upDownFactor, numberOfShots, 1, LONG_MAX) ; break;
           case 4: delayBetweenShots = limitsUpDown(upDownFactor, delayBetweenShots, 1, LONG_MAX); break;
-          case 5: setAndDoProcessMode(WAITFORGPIO); break;
-          case 6: setAndDoProcessMode(TIMELAPSESTART); break;
-          case 7: setAndDoProcessMode(TIMELAPSESTOP); break;
-          case 8: setAndDoProcessMode(ONESHOT); break;
-          case 9: setAndDoProcessMode(RESET); break;
+          case 5: triggerDuration = limitsUpDown(upDownFactor, triggerDuration, 0, LONG_MAX); break;
+          case 6: setAndDoProcessMode(WAITFORGPIO); break;
+          case 7: setAndDoProcessMode(TIMELAPSESTART); break;
+          case 8: setAndDoProcessMode(TIMELAPSESTOP); break;
+          case 9: setAndDoProcessMode(ONESHOT); break;
+          case 10: setAndDoProcessMode(RESET); break;
         }
         break;
       }
