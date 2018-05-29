@@ -83,7 +83,8 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
 * default_delayBetweenShots = 5 - Delay between shots in timelapse mode
-* default_autorefresh = 15 - In timelapse mode autorefresh webGUI every 15 seconds, 0 = autorefresh off
+* default_triggerDuration = 0 - Duration of trigger ON in seconds (0 = 250ms)
+* default_autorefresh = 5 - In timelapse mode autorefresh webGUI every 5 seconds, 0 = autorefresh off
 * timelapseAutoStart = 0 - Autostart timelapse mode = 1, No autostart = 0
 
 Why you should choose a NodeMCU over any other ESP8266 device

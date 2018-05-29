@@ -16,7 +16,7 @@
   20180510 First Version for M5Stack
   20180511 M5Stack: WiFi OFF by default, config menu, C button as value accelerator
   20180528 Setting for trigger duration
-  20180528 Preparatory work for timetable
+  20180529 Preparatory work for timetable
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -56,7 +56,7 @@ const int timelapseAutoStart = 0;                  // 1 = Autostart timelapse mo
 
 // Global variables
 const String prgTitle = "ANI Camera Remote";
-const String prgVersion = "1.4";
+const String prgVersion = "1.5";
 const String screenHeaderLine = prgTitle + " " + prgVersion;
 const int versionMonth = 5;
 const int versionYear = 2018;
@@ -68,15 +68,22 @@ const int timeSlotsPerSecond = 1000 / timeSlot;
 // Elements separated by comma
 // Elements can be:
 //   Delay between shots in seconds (e.g. 5)
-//   Repeat number * Delay between shots in seconds (e.g. 1000*13)
-//   _ and delay in seconds (do nothing) (e.g. _3600)
-//   ! and duration for trigger ON in seconds (e.g. !2), 0 = 250ms
+//   Repeat number x Delay between shots in seconds (e.g. 1000x13)
+//   w and delay in seconds (do nothing) (e.g. w3600)
+//   d and duration for trigger ON in seconds (e.g. d2), 0 = 250ms
+//   (trigger duration stays the same until set anew via element d)
 //
 // Examples:
 //   10,15,20,25,30
-//   _18000,50000*5,20000*10
-//   !5,50000*10
-String timeTable = ""; // only loadable via GET parameters, not in UI
+//   w18000,50000x5,20000x10
+//   d5,50000x10
+// Only loadable via GET parameters, not in UI
+// URL Example:
+// 192.168.4.1/?timeTable=w18000,50000x5,20000x10,d2,30,40,50
+// This waits 18000 seconds, triggers the shutter 50000 times every 5 seconds, then
+// triggers the shutter 20000 times every 10 seconds, sets a trigger ON duration of 2 seconds,
+// triggers the shutter after 30 seconds, then after 40 seconds and finally after 50 seconds
+String timeTable = "";
 
 unsigned long delayToStart = default_delayToStart;
 unsigned long numberOfShots = default_numberOfShots;
@@ -167,7 +174,7 @@ void processWebClient()
       if (sParam != "")
       {
         extractParams(sParam);
-        process_mode();
+        processMode();
       }
       sResponse = generateHTMLPage(delayToStart, numberOfShots, delayBetweenShots, triggerDuration);
       generateOKHTML(sResponse, sHeader);
@@ -183,10 +190,10 @@ void processWebClient()
 void setAndDoProcessMode(execModes newExecMode)
 {
   currentExecMode = newExecMode;
-  process_mode();
+  processMode();
 }
 
-void process_mode()
+void processMode()
 {
   if (currentExecMode == ONESHOT)
   {
@@ -292,6 +299,45 @@ void processTimeSlots()
         }
     }
   }
+  if ((timeTable != "" ) && (currentExecMode == TIMELAPSESTOP)) // Next element of timetable
+    processTimeTable();
+}
+
+void processTimeTable()
+{
+	/*
+  delayToStart = 0; // Reset wait (delay) timer anyway
+  numberOfShots = 1; // At least one shot
+  trigger(OFF);
+  int idx = timeTable.indexOf(","); // Find end of next element
+  while (idx >= 1)
+  {
+    String element = timeTable.substring(0, idx);
+    if (element.length() >= 1) // something is there
+    {
+      int xPosition = element.indexOf("X");
+      timeTable = timeTable.substring(idx + 1, timeTable.length()); // remove element from timetable
+      if (element[0] == 'W') // set wait (=Delay) time
+        delayToStart = atol(element.substring(1, element.length()).c_str());
+      else if (element[0] == 'D') // Set trigger duration
+        triggerDuration = atol(element.substring(1, element.length()).c_str());
+      else if ((xPosition >= 1) && (element.length() >= 3)) // Number of shots and delay between shots in one element
+      {
+        numberOfShots = atol(element.substring(0, xPosition).c_str());
+        delayBetweenShots = atol(element.substring(xPosition + 1, element.length()).c_str());
+        break;
+      }
+      else // delay between shots only
+      {
+        delayBetweenShots = atol(element.substring(0, element.length()).c_str());
+        break;
+      }
+    }
+    idx = timeTable.indexOf(","); // Find end of next element
+  }
+  if (numberOfShots > 0)
+    setAndDoProcessMode(TIMELAPSESTART);
+	*/
 }
 
 void switchTriggerOffAndCheckStatus()
@@ -333,6 +379,11 @@ void extractParams(String params)
         currentExecMode = TIMELAPSESTART;
         setTimelapseParams(params);
       }
+      else if ((params.indexOf("TIMETABLE") >= 0) && (currentNShots <= 0)) // Switch to timetable timelapse
+      {
+        setTimelapseParams(params);
+        processTimeTable();
+      }
     }
   }
 }
@@ -359,7 +410,7 @@ void setTimelapseParams(String params) // Set timelapse parameters for modes WAI
       if (elemName == "TRIGGERDURATION")
         triggerDuration = elemValue.toInt();
       if (elemName == "TIMETABLE")
-        timeTable = elemValue;
+        timeTable = elemValue + ",";
     }
     idx = par.indexOf("&");
   }
@@ -375,7 +426,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
   String waitForGPIOLineHint = "";
   bool showWaitForGPIOLineHint = true;
   // disable webGUI elements while in timelapse
-  if (((currentExecMode == TIMELAPSERUNNING) || (currentExecMode == REFRESH)) && (currentNShots > 0))
+  if ((((currentExecMode == TIMELAPSERUNNING) || (currentExecMode == REFRESH)) && (currentNShots > 0)) || (timeTable != ""))
   {
     buttonState = "enabled";
     stateNotInTimelapse = "disabled";
@@ -400,7 +451,7 @@ String generateHTMLPage(unsigned long sDelay, unsigned long nShots, unsigned lon
   // HTML here
   String retVal = "<html><head><title>ANI Camera Remote</title>" + refreshLine + ""
                   "<style>table, th, td { border: 0px solid black;} button, input[type=number], input[type=submit]"
-                  "{width:120px;height:20px;font-size:12pt;}</style></head><body>"
+                  "{width:120px;height:28px;font-size:12pt;}</style></head><body>"
                   "<font color=\"#000000\"><body bgcolor=\"#c0c0c0\">"
                   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=yes\">"
                   "<h2>" + prgTitle + " V" + prgVersion + "</h2>"
