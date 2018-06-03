@@ -17,6 +17,7 @@
   20180511 M5Stack: WiFi OFF by default, config menu, C button as value accelerator
   20180528 Setting for trigger duration
   20180529 Preparatory work for timetable
+  20180601 Preparatory work for autofocus pin
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -38,6 +39,7 @@ const int webServerPort = 80;                      // Port for web server
 const int screenSaverTime = 60;                    // M5Stack: Switch off screen after 60 seconds of inactivity
 
 const int triggerPin = 2;                          // GPIO2 as trigger output
+const int autofocusPin = 0;                        // GPIO0 as autofocus pin, -1 = deactivate autofocus start via pin
 const int startPin = 5;                            // GPIO5 as start input for timelapse, -1 = deactivate input pin processing
 
 // Timelapse Defaults
@@ -80,9 +82,9 @@ const int timeSlotsPerSecond = 1000 / timeSlot;
 // Only loadable via GET parameters, not in UI
 // URL Example:
 // 192.168.4.1/?timeTable=w18000,50000x5,20000x10,d2,30,40,50
-// This waits 18000 seconds, triggers the shutter 50000 times every 5 seconds, then
-// triggers the shutter 20000 times every 10 seconds, sets a trigger ON duration of 2 seconds,
-// triggers the shutter after 30 seconds, then after 40 seconds and finally after 50 seconds
+// This waits 18000 seconds, triggers the shutter 50000 times with an interval of 5 seconds, then
+// triggers the shutter 20000 times with an interval of 10 seconds, sets a trigger ON duration of 2 seconds,
+// triggers the shutter after 30 seconds, then after 40 more seconds and finally after 50 more seconds
 String timeTable = "";
 
 unsigned long delayToStart = default_delayToStart;
@@ -130,6 +132,8 @@ void setup()
   displaySetup();
 
   pinMode(triggerPin, OUTPUT); // setup GPIO as camera trigger
+  if (autofocusPin > -1)
+    pinMode(autofocusPin, OUTPUT); // setup GPIO for autofocus start function
   trigger(OFF);
   if (startPin > -1)
     pinMode(startPin, INPUT_PULLUP); // Setup GPIO input for start signal
@@ -299,45 +303,43 @@ void processTimeSlots()
         }
     }
   }
-  if ((timeTable != "" ) && (currentExecMode == TIMELAPSESTOP)) // Next element of timetable
-    processTimeTable();
 }
 
 void processTimeTable()
 {
-	/*
-  delayToStart = 0; // Reset wait (delay) timer anyway
-  numberOfShots = 1; // At least one shot
-  trigger(OFF);
-  int idx = timeTable.indexOf(","); // Find end of next element
-  while (idx >= 1)
-  {
-    String element = timeTable.substring(0, idx);
-    if (element.length() >= 1) // something is there
+  /*
+    delayToStart = 0; // Reset wait (delay) timer anyway
+    numberOfShots = 1; // At least one shot
+    trigger(OFF);
+    int idx = timeTable.indexOf(","); // Find end of next element
+    while (idx >= 1)
     {
-      int xPosition = element.indexOf("X");
-      timeTable = timeTable.substring(idx + 1, timeTable.length()); // remove element from timetable
-      if (element[0] == 'W') // set wait (=Delay) time
-        delayToStart = atol(element.substring(1, element.length()).c_str());
-      else if (element[0] == 'D') // Set trigger duration
-        triggerDuration = atol(element.substring(1, element.length()).c_str());
-      else if ((xPosition >= 1) && (element.length() >= 3)) // Number of shots and delay between shots in one element
+      String element = timeTable.substring(0, idx);
+      if (element.length() >= 1) // something is there
       {
-        numberOfShots = atol(element.substring(0, xPosition).c_str());
-        delayBetweenShots = atol(element.substring(xPosition + 1, element.length()).c_str());
-        break;
+        int xPosition = element.indexOf("X");
+        timeTable = timeTable.substring(idx + 1, timeTable.length()); // remove element from timetable
+        if (element[0] == 'W') // set wait (=Delay) time
+          delayToStart = atol(element.substring(1, element.length()).c_str());
+        else if (element[0] == 'D') // Set trigger duration
+          triggerDuration = atol(element.substring(1, element.length()).c_str());
+        else if ((xPosition >= 1) && (element.length() >= 3)) // Number of shots and delay between shots in one element
+        {
+          numberOfShots = atol(element.substring(0, xPosition).c_str());
+          delayBetweenShots = atol(element.substring(xPosition + 1, element.length()).c_str());
+          break;
+        }
+        else // delay between shots only
+        {
+          delayBetweenShots = atol(element.substring(0, element.length()).c_str());
+          break;
+        }
       }
-      else // delay between shots only
-      {
-        delayBetweenShots = atol(element.substring(0, element.length()).c_str());
-        break;
-      }
+      idx = timeTable.indexOf(","); // Find end of next element
     }
-    idx = timeTable.indexOf(","); // Find end of next element
-  }
-  if (numberOfShots > 0)
-    setAndDoProcessMode(TIMELAPSESTART);
-	*/
+    if (numberOfShots > 0)
+      setAndDoProcessMode(TIMELAPSESTART);
+  */
 }
 
 void switchTriggerOffAndCheckStatus()
@@ -345,7 +347,11 @@ void switchTriggerOffAndCheckStatus()
   trigger(OFF);
   currentTDuration = currentTriggerDuration;
   if ((currentNShots <= 0) && (currentExecMode == TIMELAPSERUNNING))  // End of Timelapse mode
+  {
     currentExecMode = TIMELAPSESTOP;
+    if (timeTable != "" )  // Next element of timetable
+      processTimeTable();
+  }
 }
 
 void extractParams(String params)
@@ -586,6 +592,8 @@ String getRemainingTimeStr(unsigned long sDelay, unsigned long nShots, unsigned 
 
 void trigger(triggerModes tMode)
 {
+  if (autofocusPin > -1)
+    digitalWrite(autofocusPin, tMode);
   digitalWrite(triggerPin, tMode);
   currentTriggerMode =  tMode;
 }
