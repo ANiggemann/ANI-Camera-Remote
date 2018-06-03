@@ -79,6 +79,7 @@ The settings can be changed at the beginning of the file ANI_CameraRemote.ino
 * webServerPort = 80 - Port for web server
 * screenSaverTime = 60 - After 60 seconds of inactivity the display will be turned off (M5Stack only)
 * triggerPin = 2 - GPIO2 as trigger output
+* autofocusPin = 0 - GPIO0 as autofocus pin, -1 = deactivate autofocus start via pin
 * startPin = 5 - GPIO5 as start input for timelapse, -1 = deactivate input pin processing
 * default_delayToStart = 0 - Delay in seconds till start of timelapse
 * default_numberOfShots = 10 - Number of shots in timelapse mode
