@@ -18,6 +18,8 @@
   20180528 Setting for trigger duration
   20180529 Preparatory work for timetable
   20180601 Preparatory work for autofocus pin
+  20180603 More compact font
+  20180603 Show trigger state ON by flashing screen
   --------------------------------------------------*/
 #ifdef ESP32
 #include <M5Stack.h>
@@ -595,7 +597,8 @@ void trigger(triggerModes tMode)
   if (autofocusPin > -1)
     digitalWrite(autofocusPin, tMode);
   digitalWrite(triggerPin, tMode);
-  currentTriggerMode =  tMode;
+  currentTriggerMode = tMode;
+  showTriggerState(tMode);
 }
 
 /*--------------------------------------------------
@@ -752,10 +755,17 @@ void processKeyboard()
   }
   M5.update();
 }
+
+void showTriggerState(triggerModes tMode)
+{
+  if (tMode == ON)
+    M5.Lcd.fillScreen(TFT_WHITE);
+}
 #else
 // Methods for ESP8266
 void displaySetup() { }
 void onDisplay(lcdScreens screen) { }
 void checkInactivity() { }
 void processKeyboard() { }
+void showTriggerState(triggerModes tMode) { } // Maybe some LED in the future
 #endif
