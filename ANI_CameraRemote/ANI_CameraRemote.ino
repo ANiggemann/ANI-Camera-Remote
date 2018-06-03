@@ -613,7 +613,7 @@ void onDisplay(lcdScreens screen)
 {
   int actuLine = 0;
   M5.Lcd.fillScreen(TFT_BLACK);
-  M5.Lcd.setFreeFont(FF9);
+  M5.Lcd.setFreeFont(FSS9);
   outLCD(1, screenHeaderLine, TFT_BLUE);
   actuScreen = screen;
   switch (screen)
@@ -630,7 +630,9 @@ void onDisplay(lcdScreens screen)
         outLCD(8, "STOP", TFT_YELLOW);
         outLCD(9, "ONE SHOT", TFT_YELLOW);
         outLCD(10, "RESET", TFT_YELLOW);
-        outLCD(11, "Rem. delay: " + String(currentDelayToStart) + " shots: " + String(currentNShots), TFT_GREEN);
+        outLCD(11, "Rem. Delay: " + String(currentDelayToStart) + " Shots: " + String(currentNShots), TFT_GREEN);
+        String remainingTimeStr = (currentNShots > 0) ? getRemainingTimeStr(currentDelayToStart, currentNShots, delayBetweenShots, 0) : getRemainingTimeStr(delayToStart, numberOfShots, delayBetweenShots, 0);
+        outLCD(12, "Remaining Time: " + remainingTimeStr, TFT_GREEN);
         lastDialogLine = 10;
         break;
       }
@@ -680,7 +682,7 @@ void changeValueOrExecFunction(int upDownFactor, lcdScreens screen, int lineNumb
 
 void outLCD(int lineNumber, String outStr, int textColor)
 {
-  const int lineFactor = 20;
+  const int lineFactor = 19;
   M5.Lcd.setTextColor(lineNumber == highlightLine ? TFT_RED : textColor);
   M5.Lcd.setCursor(0, lineNumber * lineFactor);
   M5.Lcd.printf(outStr.c_str());
