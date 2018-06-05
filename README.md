@@ -1,5 +1,4 @@
 # Moved to GitLab: [ANI-Camera-Remote](https://gitlab.com/ANiggemann/ANI-Camera-Remote)
--
 
 # ANI-Camera-Remote
 Remote Control and Timelapse Control of Cameras via [ESP8266](https://en.wikipedia.org/wiki/ESP8266) and [ESP32](https://en.wikipedia.org/wiki/ESP32)
